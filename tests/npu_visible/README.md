@@ -7,8 +7,10 @@ Not part of the 16-milestone regression. Do not add these paths to
 
 4-column streamed complex mixer. One dispatch moves 64 frames x 1024 bf16
 x 4 columns (~0.5 MiB I/Q). First dispatch is checked against NumPy
-(`L_inf = 0.007812`, same bound as M6). The next 5 seconds print MB/s
-and Msps.
+(`L_inf = 0.007812`, same bound as M6). A cold run prints
+`First dispatch (includes compile)`; a repeat run prints
+`First dispatch (cached)` (IRON xclbin under `%USERPROFILE%\.npu\cache`).
+The next 5 seconds print MB/s and Msps.
 
 ```powershell
 python tests\npu_visible\test_iq_throughput.py

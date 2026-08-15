@@ -27,6 +27,40 @@ TILE_N = 1024
 FRAMES = 64
 BF16_BYTES = 2
 ATOL = 0.01
+COMPILE_HINT_SECONDS = 1.5
+CACHE_SUFFIXES = {".xclbin", ".bin", ".elf", ".pdi"}
+
+
+def _cache_roots() -> list[Path]:
+    home = Path.home()
+    return [
+        home / ".npu" / "cache",
+        home / ".npu",
+        home / "AppData" / "Local" / "npu",
+    ]
+
+
+def _cache_fingerprint() -> dict[str, tuple[int, int]]:
+    found: dict[str, tuple[int, int]] = {}
+    for root in _cache_roots():
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in CACHE_SUFFIXES:
+                continue
+            try:
+                st = path.stat()
+            except OSError:
+                continue
+            found[str(path)] = (st.st_size, int(st.st_mtime_ns))
+    return found
+
+
+def first_dispatch_label(elapsed_s: float, before: dict, after: dict) -> str:
+    wrote_cache = after != before
+    if wrote_cache or elapsed_s >= COMPILE_HINT_SECONDS:
+        return f"First dispatch (includes compile): {elapsed_s:.2f}s"
+    return f"First dispatch (cached): {elapsed_s:.2f}s"
 
 
 def ensure_ironenv_interpreter() -> None:
@@ -200,10 +234,12 @@ def main() -> None:
     lo_tensor = XRTTensor(lo_bf16, dtype=bfloat16)
     out_tensor = XRTTensor(out_bf16, dtype=bfloat16)
 
-    print("Compiling 4-column stream mixer (once)...")
+    print("Warmup dispatch (compile on cache miss)...")
+    cache_before = _cache_fingerprint()
     t0 = time.perf_counter()
     iq_stream_mixer(in_tensor, lo_tensor, out_tensor, N=n_elems, element_type=bfloat16)
-    print(f"First dispatch (includes compile): {time.perf_counter() - t0:.2f}s")
+    warmup_s = time.perf_counter() - t0
+    print(first_dispatch_label(warmup_s, cache_before, _cache_fingerprint()))
     out_tensor.to("cpu")
     ref = mixer_reference(in_bf16, lo_bf16)
     max_err = float(
