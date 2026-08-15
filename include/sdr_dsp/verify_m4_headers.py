@@ -6,9 +6,8 @@
 
 from pathlib import Path
 
-
 # Repo root auto-detected from this file's location:
-#   include/sdr_dsp/verify_m4_headers.py -> parents[2] is repo root.
+# include/sdr_dsp/verify_m4_headers.py -> parents[2] is the repo root.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
