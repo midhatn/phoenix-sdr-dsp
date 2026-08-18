@@ -1,0 +1,31 @@
+{
+  "title": "Phoenix SDR-DSP: Windows-Native DSP, SDR, and PQC Experiments for AMD Phoenix XDNA1",
+  "description": "A native Windows 11 research corpus for deterministic DSP, SDR, transform, and FIPS-aligned post-quantum cryptography experiments on AMD Ryzen AI Phoenix silicon. The v1.0.1-rc.4 snapshot adds audited third-party provenance, retained NIST ACVP notices, and GitHub-compatible mathematical notation.",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Nashar, Midhat"
+    }
+  ],
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "version": "1.0.1-rc.4",
+  "publication_date": "2026-08-18",
+  "keywords": [
+    "AMD Ryzen AI",
+    "Phoenix NPU",
+    "XDNA1",
+    "AIE2",
+    "software-defined radio",
+    "digital signal processing",
+    "post-quantum cryptography",
+    "MLIR-AIE"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/midhatn/phoenix-sdr-dsp",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
