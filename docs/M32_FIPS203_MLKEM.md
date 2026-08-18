@@ -1,7 +1,10 @@
-# M32 — FIPS 203 ML-KEM (planned)
+# M32 — FIPS 203 ML-KEM (historical planning note)
 
-Status: next NTT-track milestone. Not in `run_all_silicon_tests.py`.
-No silicon claim. No KAT claim.
+> **Historical record.** This pre-validation plan is retained as design
+> evidence and is not the current validation contract. The current repository
+> scope is M32b/c/d hardware-backed components plus M32e ML-KEM-512 internal
+> deterministic interfaces (FIPS 203 Algorithms 16–18) in a host/NPU
+> composition. It does not establish public Algorithms 19–21 coverage.
 
 M10–M15b already sit on the ML-KEM ring. This milestone turns those
 primitives into the approved key-encapsulation mechanism in

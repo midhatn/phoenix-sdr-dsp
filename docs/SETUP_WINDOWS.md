@@ -74,7 +74,16 @@ Activate the resulting environment:
 
 ## Post-Quantum Cryptography reference dependencies (M32 / M33)
 
-The M32 FIPS 203 ML-KEM and M33 FIPS 204 ML-DSA tests use official NIST ACVP-Server known-answer vectors and two published reference implementations from the [pq-crystals](https://pq-crystals.org/) family. M32b/c/d and M33a/b dispatch directly to the NPU. M32e combines 60 host KATs with a nine-vector ML-KEM-512 silicon smoke gate, while M33d/e are host/NPU composers using the native M33a/M33b primitive runners. Since v1.0.0, `install.py` auto-installs the pinned PQC reference packages into the `ironenv` it creates. The equivalent manual step, useful if you bootstrapped `ironenv` another way or want to re-pin versions, is:
+The M32 FIPS 203 ML-KEM and M33 FIPS 204 ML-DSA tests use official NIST
+ACVP-Server known-answer vectors and two published reference implementations
+from the [pq-crystals](https://pq-crystals.org/) family. M32b/c/d and M33a/b
+dispatch directly to the NPU. M32e combines 60 host KATs with a nine-vector
+ML-KEM-512 silicon smoke gate, while M33d/e are host/NPU composers using the
+native M33a/M33b primitive runners. Since v1.0.0, `install.py` auto-installs
+the version-pinned oracle and test packages into the `ironenv` it creates. The
+transitive dependency closure remains unhashed, so this is not yet a fully
+locked Python environment. The equivalent manual step, useful if you bootstrapped `ironenv`
+another way or want to re-pin versions, is:
 
 ```powershell
 & C:\\phoenix-sdr-dsp\\third_party\\mlir-aie\\ironenv\\Scripts\\python.exe -m pip install kyber-py==1.0.1 dilithium-py==1.4.0 pytest

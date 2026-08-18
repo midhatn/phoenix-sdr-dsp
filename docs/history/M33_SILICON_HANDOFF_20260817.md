@@ -1,5 +1,8 @@
 # M33 native silicon-path handoff — 2026-08-17
 
+> **Historical handoff record.** This preserves pre-current-main operational
+> context and does not supersede the tracked validation boundary documents.
+
 ## Scope completed
 
 This change turns the M33 primitive and composer gates into **native-only**

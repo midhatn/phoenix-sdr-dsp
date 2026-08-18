@@ -4,7 +4,8 @@
 
 These results were produced on the project's Windows Phoenix XDNA1 test host
 from base commit `4bc0f158e9208469cf356d1349cef1aff55e8e47` plus the uncommitted
-M33 native-runner corrections described in `M33_SILICON_HANDOFF_20260817.md`.
+M33 native-runner corrections described in the historical
+[`M33_SILICON_HANDOFF_20260817.md`](history/M33_SILICON_HANDOFF_20260817.md).
 The tests used the checkout-local MLIR-AIE/IRON Python environment and
 `PEANO_INSTALL_DIR` under its pinned `llvm-aie` package.
 

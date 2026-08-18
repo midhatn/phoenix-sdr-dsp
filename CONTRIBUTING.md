@@ -32,22 +32,27 @@ required by parallel-DMA milestones). Official install path: [IRON native Window
 [`docs/M2_TOOLCHAIN_PIN.md`](docs/M2_TOOLCHAIN_PIN.md) for details.
 
 See [`docs/SETUP_WINDOWS.md`](docs/SETUP_WINDOWS.md) for the full install
-walkthrough, or run the one-shot bootstrap:
+walkthrough. The supported bootstrap is the hash-checked installer:
 
 ```powershell
-.\scripts\bootstrap_env.ps1
+py .\install.py
 ```
+
+`scripts/bootstrap_env.ps1` is a compatibility wrapper around this same
+installer; it no longer performs rolling package installs.
 
 ---
 
 ## 2. Development workflow
 
-### Activate the environment
+### Use the checkout-local environment
 
-Every session starts by activating `ironenv`:
+The canonical runner re-executes the checkout-local `ironenv` on Windows, so
+activation is not required to run it. Activate it only when you need its Python
+interpreter for a host-side tool:
 
 ```powershell
-& "C:\phoenix-sdr-dsp\third_party\mlir-aie\ironenv\Scripts\Activate.ps1"
+& ".\third_party\mlir-aie\ironenv\Scripts\Activate.ps1"
 ```
 
 ### Verify silicon before touching anything
@@ -56,8 +61,11 @@ Every session starts by activating `ironenv`:
 python run_all_silicon_tests.py
 ```
 
-You should see `16/16 PASS` in about 18 s with a warm IRON cache (first compile
-is slower). If not, fix your environment before starting work.
+The current protected matrix contains 34 invocations: 29 direct-hardware
+entries, four host/NPU composers, and one CPU reference. The documented
+2026-08-17 result is 34/34 mixed-backend PASS; do not represent it as 34 fully
+device-resident workloads. If the runner does not complete on your validated
+hardware, fix the environment before starting work.
 `scripts/verify_environment.ps1` runs quick smoke checks.
 
 ### Make your change
@@ -94,13 +102,15 @@ tests/mN_your_name/
 2. Add the milestone to the `verification.last_verified.milestones` list in
    [`toolchain.yaml`](toolchain.yaml).
 3. Update `README.md` "Validated Silicon Milestones" table.
-4. Verify: full 16/16 PASS is preserved.
+4. Update the current-matrix documentation only after an authenticated
+   hardware result is recorded; do not replace the dated historical 16/16
+   snapshot with an unverified claim.
 
 Demos such as `tests/npu_visible/` are not milestones. Do not add them to
 `run_all_silicon_tests.py` or `toolchain.yaml` unless the project explicitly
 promotes them. Keep first-buffer numerical checks if the demo claims DSP
-correctness. The planned FIPS 203 work in `tests/m32_mlkem/` is the same:
-stay out of the 16-suite until a gate is bit-exact on Phoenix NPU1.
+correctness. The M32/M33 work is already represented in the current 34-entry
+matrix; retain its explicit host/NPU and internal-interface boundaries.
 
 ---
 
@@ -118,6 +128,7 @@ Copy this into the PR body:
 - [ ] Commit messages are descriptive
 
 Then open the PR against `main`. CI will run lint + CFF/YAML validation +
+host-only contracts + installer self-test + public modular-header UBSan test +
 M12 NTT CPU reference + M16 FFT CPU reference + Markdown link check. If your
 change touches the mlir-aie/Peano install path, add the `run-onboarding-smoke`
 label to the PR to also run the fork-onboarding smoke job.
@@ -148,7 +159,7 @@ directly to the correct upstream tracker.
 - YAML: 2-space indent (see `.editorconfig`).
 - Commit messages: imperative present, `scope: short summary`, then blank
   line, then bullet-pointed detail. Examples:
-  - `feat(m17): add bit-reversed radix-4 NTT kernel`
+  - `feat(m17): add radix-4 Stockham FFT validation`
   - `fix(m9): correct FIR tap indexing at column boundaries`
   - `chore(ci): pin ruff to 0.5.x`
 

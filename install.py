@@ -937,14 +937,16 @@ PQC_REFERENCE_PACKAGES: tuple[str, ...] = (
     # parametrisation.
     "kyber-py==1.0.1",
     "dilithium-py==1.4.0",
-    "pytest",
+    "pytest==9.1.1",
 )
 
 
 def install_pqc_reference_packages(iron_python: Path) -> None:
-    """Install the pinned PQC reference packages into ironenv.
+    """Install the declared PQC reference packages into ironenv.
 
-    These are required by the Post-Quantum Cryptography track (M32 FIPS 203
+    `kyber-py`, `dilithium-py`, and pytest are version-pinned. The full
+    transitive dependency closure is still not hash-locked. These are required by the
+    Post-Quantum Cryptography track (M32 FIPS 203
     ML-KEM and M33 FIPS 204 ML-DSA). Installing them here means a new user
     running `python install.py` on a fresh clone gets a fully working
     `python run_all_silicon_tests.py` without a second manual pip step.
@@ -1172,8 +1174,9 @@ def main(argv: list[str] | None = None) -> int:
     print(" Next step:")
     print("   python run_all_silicon_tests.py")
     print(" The test runner uses ironenv automatically. No activate step.")
-    print(" Expected at v1.0.0: 33 / 33 PASS (M3, M5-M15, M15b, M17, M17p,")
-    print("                                   M19-M27, M32b/c/d/e, M33a/b/d/e).")
+    print(" Recorded v1.0.0 result: 34 / 34 mixed-backend PASS (M3, M5-M15,")
+    print(" M15b, M17, M17p, M19-M27, M32b/c/d/e, M33a/b/d/e-sign/e-verify).")
+    print(" See docs/PQC_COMPLETE_V1.md for hardware, host/NPU, and CPU boundaries.")
     print()
     print(" Post-Quantum Cryptography reference packages were installed into")
     print(" ironenv above:")

@@ -1,6 +1,7 @@
 // Purpose: Bit-accurate fused Digital Down-Converter (DDC) kernel for AIE2
 //          (Milestone 21). Three stages fused in one kernel on one AIE2 core:
-//            Stage 1 (mix): complex NCO at f_c = -f_s/8 shifts a tone at
+//            Stage 1 (mix): negative-exponent complex NCO with f_LO = +f_s/8
+//                            shifts a tone at
 //                           +f_s/8 down to DC. LUT is 8 samples,
 //                           cordic-free (Analog Devices MT-085).
 //            Stage 2 (LPF): 16-tap real-tap Kaiser-window low-pass filter
@@ -30,7 +31,7 @@
 //                Harris 2004 Section 8.3 "The Digital Down-Converter"):
 //   For downconversion, LO = e^{-j 2 pi n / 8}, i.e. cos_lo[n] = cos(-2 pi n/8),
 //   sin_lo[n] = sin(-2 pi n/8). Only 8 unique LO samples exist because the
-//   sequence repeats every 8 input samples (f_c = f_s/8). The LO LUT is
+//   sequence repeats every 8 input samples (f_LO = f_s/8). The LO LUT is
 //   baked as constexpr floats and indexed by (n & 7). This is the standard
 //   "cordic-free" quarter-wave DDS trick.
 //
@@ -101,7 +102,7 @@ void ddc_kernel(
         -0.009216f, -0.009644f, -0.003281f, -0.000242f
     };
 
-    // LO look-up table for f_c = -f_s/8. Values are cos / sin of
+    // LO look-up table for e^(-j 2 pi n / 8). Values are cos / sin of
     // -2 pi k / 8 for k = 0..7, bfloat16-quantized so the host reference
     // matches term-for-term. Standard "cordic-free" quarter-wave DDS
     // (Analog Devices MT-085 "Fundamentals of DDS", Table 1).

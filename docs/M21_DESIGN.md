@@ -17,12 +17,13 @@ an intermediate frequency (IF) down to complex baseband, then reduces the
 sample rate. It is the workhorse block that turns a wideband ADC stream into
 a narrowband channel a demodulator can process. In one sentence:
 
-> `y[m] = decimate_M { LPF { x[n] · e^(-j 2π f_c n / f_s) } }`
+> `y[m] = decimate_M { LPF { x[n] · e^{-j 2π f_LO n / f_s} } }`
 
 Milestone 21 delivers a **single fused AIE2 kernel** that runs all three
 stages on one core:
 
-1. Complex mix by a numerically-controlled oscillator (NCO) at `f_c = -f_s/8`.
+1. Complex mix by a numerically-controlled oscillator (NCO) with
+   `f_LO = +f_s/8`, using the negative-exponent phasor.
 2. 16-tap real-tap Kaiser low-pass filter (unity DC gain, cutoff `π/M = π/4`).
 3. Decimate by `M = 4`.
 
@@ -36,14 +37,15 @@ and the fused-loop decimator pattern from M20.
 
 For an input stream `x[n] = I_x[n] + j Q_x[n]` sampled at `f_s`, the DDC's
 first stage is a complex multiply against a locally generated oscillator
-tuned to `-f_c`:
+tuned to `f_LO`:
 
 ```
-y_mix[n] = x[n] · e^(-j 2π f_c n / f_s)
+y_mix[n] = x[n] · e^{-j 2π f_LO n / f_s}
         = x[n] · (cos_lo[n] + j sin_lo[n])
 ```
 
-with `cos_lo[n] = cos(-2π f_c n / f_s)` and `sin_lo[n] = sin(-2π f_c n / f_s)`.
+with `cos_lo[n] = cos(-2π f_LO n / f_s)` and
+`sin_lo[n] = sin(-2π f_LO n / f_s)`.
 
 Expanding the complex multiply gives the operand order the kernel uses
 ([Oppenheim & Schafer, DTSP 3e, §2.2](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003374/9780132146357);
@@ -56,7 +58,7 @@ Q_mix[n] = I_x[n] · sin_lo[n] + Q_x[n] · cos_lo[n]
 
 ### 2.2 LO look-up table
 
-With `f_c = f_s / 8`, `cos_lo[n]` and `sin_lo[n]` are periodic with period 8,
+With `f_LO = f_s / 8`, `cos_lo[n]` and `sin_lo[n]` are periodic with period 8,
 so only **8 unique LO samples** exist. The kernel stores them as a `const
 float[8]` LUT indexed by `(n & 7)`. This is the standard "cordic-free"
 quarter-wave DDS trick documented in
@@ -126,7 +128,7 @@ mixed pair rather than a raw input pair.
 | --- | --- | --- |
 | Input length | 4096 bfloat16 (= 2048 complex pairs) | Matches M6/M8/M19/M20 XRT plumbing. |
 | Output length | 4096 bfloat16 total (512 populated pairs + 3072 zero tail) | Same buffer size as input — no XRT changes. |
-| `f_c` | `-f_s/8` | Enables cordic-free 8-entry LO LUT. |
+| `f_LO` | `+f_s/8` | The negative-exponent LUT downconverts a `+f_s/8` tone to DC. |
 | Filter length | 16 taps | Reuses M20 prototype; ~19 dB @ passband edge, deeper further out. |
 | Decimation M | 4 | Matches M20 decim stage; sample-rate matches receiver channelizer. |
 

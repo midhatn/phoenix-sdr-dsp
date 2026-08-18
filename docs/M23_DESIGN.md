@@ -23,7 +23,7 @@ Radio"](https://static.squarespace.com/static/543ae9afe4b0c3b808d72acd/543aee1fe
 
 In one sentence:
 
-> `y_k[m] = IDFT{ M-path FIR{ commutate{ x[n] } } }[k]`
+> `y_k[m] = DFT{ M-path FIR{ commutate{ x[n] } } }[k]`
 
 Equivalently, for `M = 8`, the channelizer produces 8 parallel streams
 `y_0..y_7`, one per channel, each downsampled by 8. Milestone 23
@@ -127,7 +127,8 @@ Sanity checks (all PASS in host reference `_local_prototype_check`):
 
 At `M = 8`, the ideal DFT twiddles snap to `{0, ±0.707107, ±1.0}`.
 After bfloat16 quantization the non-trivial values are `±0.70703125`
-(the 4-bit-mantissa bfloat16 quantum) and the zero entries collapse to
+(the bfloat16 quantum; bfloat16 has 7 explicit fraction bits and 8 bits of
+precision including the implicit leading bit) and the zero entries collapse to
 hard zero. The kernel stores both `W_re` and `W_im` as `constexpr
 float[8][8]` — 128 words = 512 bytes of ROM shared with the FIR taps.
 

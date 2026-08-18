@@ -19,12 +19,12 @@ sets.
 ## Composer shape (Alg 6, FIPS 204)
 
 ```text
-seed_bytes  = SHAKE256(zeta || [k] || [ell], 128)                  # M32c
+seed_bytes  = SHAKE256(zeta || [k] || [ell], 128)                  # host SHAKE path
 rho, rho', K = seed_bytes[:32], seed_bytes[32:96], seed_bytes[96:]
 
-A_hat[i][j] = RejNTTPoly(SHAKE128(rho || [j,i]))         for i<k, j<ell  # M32c inside
-s1[j]       = RejBoundedPoly(SHAKE256(rho' || j),  eta)  for j<ell        # M32c inside
-s2[i]       = RejBoundedPoly(SHAKE256(rho' || l+i), eta)  for i<k         # M32c inside
+A_hat[i][j] = RejNTTPoly(SHAKE128(rho || [j,i]))         for i<k, j<ell  # host SHAKE path
+s1[j]       = RejBoundedPoly(SHAKE256(rho' || j),  eta)  for j<ell        # host SHAKE path
+s2[i]       = RejBoundedPoly(SHAKE256(rho' || l+i), eta)  for i<k         # host SHAKE path
 
 s1_hat[j]   = NTT(s1[j])                                for j<ell         # M33a mode 0
 
@@ -38,7 +38,7 @@ t[i]  = INTT(t_hat[i]) + s2[i]                          for i<k           # M33a
 t1[i], t0[i] = Power2Round(t[i], d=13)                  for i<k           # M33b mode 0
 
 pk = rho || bit_pack_t1(t1)
-tr = SHAKE256(pk, 64)                                                     # M32c
+tr = SHAKE256(pk, 64)                                                     # host SHAKE path
 sk = rho || K || tr || bit_pack_s(s1) || bit_pack_s(s2) || bit_pack_t0(t0)
 ```
 

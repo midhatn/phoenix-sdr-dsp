@@ -1,5 +1,12 @@
 # M32e — ML-KEM-512 end-to-end on Phoenix NPU (PQC)
 
+> **Historical design and bring-up record.** Preserve this document as evidence
+> of its design stage; do not use its pending-status, all-parameter-set, or
+> public-API wording as the current result. The current recorded boundary is
+> ML-KEM-512 internal deterministic interfaces (FIPS 203 Algorithms 16–18),
+> 60 host KATs, and a nine-vector host/NPU silicon smoke gate. Public Algorithms
+> 19–21, ML-KEM-768, and ML-KEM-1024 coverage are not claimed.
+
 ## Purpose
 
 M32e is the capstone of Track 4 (Post-Quantum Cryptography, PQC) in the

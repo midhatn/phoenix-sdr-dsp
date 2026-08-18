@@ -23,7 +23,10 @@ Track 4 focuses first on **ML-KEM** (FIPS 203) because it is the primary post-qu
 2. **SampleNTT** — rejection sampling of the SHAKE128 XOF stream to produce a uniform ring element `â ∈ R_q` (FIPS 203 Algorithm 7).
 3. **SamplePolyCBDη** — the centered binomial distribution sampler with η ∈ {2, 3}, driven by a PRF (SHAKE256) output (FIPS 203 Algorithm 8).
 
-All three are the *only* sources of randomness inside ML-KEM key generation and encapsulation, so they must be bit-exact against the FIPS 202 / FIPS 203 test vectors before any of the M32b–M32e milestones can be trusted.
+These are deterministic transforms of caller-provided seeds and messages; they
+do not create entropy. A composed ML-KEM implementation must obtain required
+randomness from its caller or an approved randomness source. The primitive
+checks here do not establish deployment security properties.
 
 ## 2. Mathematical background
 
@@ -31,9 +34,9 @@ All three are the *only* sources of randomness inside ML-KEM key generation and 
 
 FIPS 202 §3.1 defines the Keccak-*p* family and fixes SHA-3 / SHAKE to use Keccak-*f*[1600] = Keccak-*p*[1600, 24] ([FIPS 202 §5.2](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf)). The permutation state is a 5 × 5 × 64-bit array
 
-\[
+$$
 A : \{0,1,2,3,4\} \times \{0,1,2,3,4\} \times \{0,1,\dots,63\} \to \{0,1\}
-\]
+$$
 
 stored as 25 lanes of 64 bits each, with `lane(x,y) = A[x,y,·]` treated as a little-endian 64-bit word ([Keccak specifications summary](https://keccak.team/keccak_specs_summary.html)). One round applies five step mappings θ, ρ, π, χ, ι in sequence; Keccak-*f*[1600] applies 24 rounds:
 
@@ -75,19 +78,25 @@ M32c exposes exactly the four FIPS 202 primitives above and lets the higher-leve
 
 `SampleNTT` converts a 32-byte seed plus a 2-byte (j, i) domain-separation tag into a uniform ring element `â ∈ R_q` where `R_q = Z_q[X] / (X²⁵⁶ + 1)` and `q = 3329`. The algorithm feeds `(seed ‖ j ‖ i)` into SHAKE128 as an XOF and consumes bytes three at a time. Each 3-byte block is unpacked into two 12-bit little-endian integers
 
-\[
+$$
 d_1 = b_0 + 256 (b_1 \bmod 16), \qquad d_2 = \lfloor b_1 / 16 \rfloor + 16 b_2
-\]
+$$
 
-and each 12-bit integer is accepted iff it is < q. When 256 coefficients have been accepted the routine returns. Rejection probability per 12-bit integer is (2¹² − q) / 2¹² = 767 / 4096 ≈ 18.7%, so on average `256 / (2 · (1 − 767/4096)) ≈ 78.7` three-byte blocks (≈ 236 bytes) suffice — always less than one 168-byte SHAKE128 rate block, but the algorithm must be able to squeeze additional rate blocks in the tail case ([Kyber round-3 spec §1.4.2](https://pq-crystals.org/kyber/data/kyber-specification-round3-20210131.pdf)).
+and each 12-bit integer is accepted iff it is < q. When 256 coefficients have
+been accepted the routine returns. Rejection probability per 12-bit integer is
+(2¹² − q) / 2¹² = 767 / 4096 ≈ 18.7%, so on average
+`256 / (2 · (1 − 767/4096)) ≈ 78.7` three-byte blocks (≈ 236 bytes) suffice.
+The mean already exceeds one 168-byte SHAKE128 rate block, so the algorithm
+must support squeezing more than one rate block ([Kyber round-3 spec
+§1.4.2](https://pq-crystals.org/kyber/data/kyber-specification-round3-20210131.pdf)).
 
 ### 2.5 SamplePolyCBDη (FIPS 203 Algorithm 8)
 
 `SamplePolyCBDη` produces a ring element whose 256 coefficients are drawn from the centered binomial distribution CBD(η): each coefficient equals ∑ aᵢ − ∑ bᵢ where a₁ … aη and b₁ … bη are η pairs of independent uniform bits. The routine consumes exactly 64η bytes of PRF (SHAKE256) output — 128 bytes for η = 2 (ML-KEM-768/1024) or 192 bytes for η = 3 (ML-KEM-512) — and lays them out as a bit stream. Coefficient i is
 
-\[
+$$
 f_i = \sum_{j=0}^{\eta-1} B[2\eta i + j] - \sum_{j=0}^{\eta-1} B[2\eta i + \eta + j]
-\]
+$$
 
 where `B[·]` indexes the bit stream in little-endian byte-bit order (LSB-first within each byte). Output coefficients lie in {−η, …, +η}. For η = 2 the distribution has variance 1; for η = 3 the variance is 3/2 ([Kyber CFRG draft §2.4](https://www.ietf.org/archive/id/draft-cfrg-schwabe-kyber-04.html)).
 
@@ -95,7 +104,11 @@ where `B[·]` indexes the bit stream in little-endian byte-bit order (LSB-first 
 
 ### 3.1 Single-tile placement
 
-The full M32c stack fits on **one AIE2 compute tile** on the Phoenix NPU 4×5 array ([Kernel.org AMD XDNA driver docs](https://docs.kernel.org/accel/amdxdna/amd_shim.html)). We follow the M27 topology lesson: AIE2 compute tiles have 2 input DMA channels + 2 output DMA channels; overrunning 2 in + 1 out breaks placement, so M32c uses exactly:
+The full M32c stack targets one AIE2 compute tile on the Phoenix 4×5 array
+([AMD NPU kernel documentation](https://docs.kernel.org/accel/amdxdna/amdnpu.html)).
+We follow the M27 topology lesson: AIE2 compute tiles have 2 input DMA
+channels + 2 output DMA channels; overrunning 2 in + 1 out breaks placement,
+so M32c uses exactly:
 
 - `in_bytes`  — u8 buffer, absorbed message + trailing domain-separation control block
 - `in_ctrl`   — u8 control block: `{mode, in_len_lo, in_len_hi, out_len_lo, out_len_hi, eta, ntt_flag, seed_j, seed_i}` (9 bytes zero-padded to 16)

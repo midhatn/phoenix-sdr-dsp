@@ -1,6 +1,8 @@
 # M24 — Correlator, Preamble Detection & Packet Sync Design
 
-Status: implementation complete (host reference + kernel bit-exact match on seed-794 silicon-gate vector, silicon gate pending laptop run).
+Status: **historical design note; implementation shipped.** This document
+retains design-stage details. Consult the protected-runner matrix and current
+validation summaries for current status rather than the old pending-run wording.
 Owner: Phoenix SDR-DSP team.
 Target hardware: [AMD Ryzen 9 7940HS "Phoenix"](https://www.amd.com/en/products/apu/amd-ryzen-9-7940hs) / [XDNA1 NPU](https://docs.kernel.org/accel/amdxdna/amdnpu.html) / AIE2 (one core, 4×5 tile array).
 Target OS: Windows 11 Pro 25H2, Clang / Peano AIE2, [IRON MLIR-AIE 1.4.1](https://github.com/Xilinx/mlir-aie/releases/tag/v1.4.1).
@@ -38,14 +40,15 @@ The received sample stream is complex baseband at rate `f_s`:
 The known preamble is the [length-13 Barker
 sequence](https://en.wikipedia.org/wiki/Barker_code):
 
-\[
+$$
 s = (+1, +1, +1, +1, +1, -1, -1, +1, +1, -1, +1, -1, +1) \in \{-1, +1\}^{13}
-\]
+$$
 
 Barker-13 has the maximum possible peak sidelobe level for real
 binary sequences of length ≤ 13: aperiodic autocorrelation `13`
-at zero lag, `|c_v| ≤ 1` for all `1 ≤ v < 13` — a **13.24 dB
-peak-to-sidelobe ratio** ([Barker 1953](https://ieeexplore.ieee.org/document/6773685);
+at zero lag, `|c_v| ≤ 1` for all `1 ≤ v < 13` — a 13:1 amplitude
+peak-to-sidelobe ratio, or **22.28 dB** when expressed as
+`20 log10(13)` ([Barker 1953](https://ieeexplore.ieee.org/document/6773685);
 [Wikipedia Barker code](https://en.wikipedia.org/wiki/Barker_code)).
 This is why it is used as the sync sequence in IEEE 802.11 DSSS
 1 Mbps and 2 Mbps PHY modes ([IEEE Std 802.11-2020 §17.4.6.5](https://standards.ieee.org/ieee/802.11/7028/))
@@ -56,9 +59,9 @@ pulse-compression ([Skolnik, *Radar Handbook*, 3e, ch. 8](https://www.accessengi
 
 The complex matched filter for preamble `s` is defined as:
 
-\[
+$$
 y[n] \;=\; \sum_{k=0}^{L-1} \overline{s[k]} \cdot x[n+k], \qquad L = 13
-\]
+$$
 
 ([Proakis & Salehi, *Digital Communications*, 5e §5.1.5](https://www.mheducation.com/highered/product/digital-communications-proakis-salehi/M9780072957167.html);
 [GNU Radio `corr_est_cc`](https://www.gnuradio.org/doc/doxygen-v3.7.10/corr__est__cc_8h_source.html);
@@ -66,10 +69,10 @@ y[n] \;=\; \sum_{k=0}^{L-1} \overline{s[k]} \cdot x[n+k], \qquad L = 13
 
 Because `s ∈ {-1, +1}` is real-valued, the conjugate collapses:
 
-\[
+$$
 I_y[n] = \sum_{k=0}^{L-1} s[k] \cdot I_x[n+k], \quad
 Q_y[n] = \sum_{k=0}^{L-1} s[k] \cdot Q_x[n+k]
-\]
+$$
 
 **Correlator-as-reverse-FIR identity.** A sliding correlator with
 taps `s[k]` and forward indexing `x[n+k]` produces an output stream
@@ -77,11 +80,10 @@ that is identical, sample-for-sample, to a **causal FIR filter**
 with reversed taps `h[k] = s[L-1-k]` applied to the same input
 ([Oppenheim & Schafer, *DTSP*, 3e §2.6.2](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003543)):
 
-\[
-y_{\text{corr}}[n] = \sum_{k=0}^{L-1} s[k] \cdot x[n+k]
-                    = \sum_{k=0}^{L-1} s[L-1-k] \cdot x[n+k] \big|_{\text{reversed}}
-                    = (h \ast x)[n + (L-1)]
-\]
+$$
+r[n] = \sum_{k=0}^{L-1} s[k] \cdot x[n+k], \qquad
+y[n] = \sum_{k=0}^{L-1} h[k] \cdot x[n-k] = r[n-(L-1)]
+$$
 
 with delay `L-1`. This lets the kernel reuse the shift-and-ingest
 FIR schedule of [M8](../tests/m8_pipeline/pipeline_kernel.cc) and
@@ -144,15 +146,15 @@ dispatching to silicon:
 1. **Preamble self-check.** Drive `x[n]` = zero-padded Barker-13
    (i.e. Barker-13 at offset 100, zeros elsewhere, `Qx = 0`).
    Expect a correlation peak of magnitude **13.0** at sample
-   `100` (Barker peak) and no sidelobe ≥ 2.
+   `112` (input offset + `L-1` causal delay) and no sidelobe ≥ 2.
 2. **DC input.** `x[n] = 1 + 0j`. Barker-13 has `sum(s) = +5`, so
    the steady-state I-channel output equals **5.0** and the Q-channel
    is zero. This confirms the reversed-tap convention is correct.
 3. **Complex preamble at 45°.** Drive `x[n]` = Barker-13 at offset
-   200, rotated by `exp(j π/4)`. Expect `|y[200]| = 13.0` with
+   200, rotated by `exp(j π/4)`. Expect `|y[212]| = 13.0` with
    phase `π/4`. This confirms the correlator is phase-preserving.
 4. **Negated preamble.** Drive `x[n]` = `-Barker-13` at offset 300.
-   Expect `y[300] = -13`. This confirms sign fidelity.
+   Expect `y[312] = -13`. This confirms sign fidelity.
 
 ### 5.1 Silicon gate
 

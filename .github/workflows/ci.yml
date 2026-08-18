@@ -46,12 +46,12 @@ jobs:
     name: Lint Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install ruff
-        run: python -m pip install --upgrade ruff
+        run: python -m pip install --upgrade ruff==0.16.3
       - name: Lint
         run: |
           ruff check --output-format=github .
@@ -68,14 +68,14 @@ jobs:
     name: Validate CITATION.cff and toolchain.yaml
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - name: Install validators
         run: |
-          python -m pip install --upgrade cffconvert pyyaml
+          python -m pip install --upgrade cffconvert==2.0.0 PyYAML==6.0.3
 
       - name: Validate CITATION.cff
         run: |
@@ -111,14 +111,14 @@ jobs:
     name: CPU reference tests (M12 NTT, M16 FFT)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - name: Install runtime deps
         run: |
-          python -m pip install --upgrade numpy
+          python -m pip install --upgrade numpy==2.5.2
 
       - name: Run Milestone 12 (CPU NTT/INTT reference)
         run: |
@@ -136,6 +136,44 @@ jobs:
           python tests/m16_fft_ref/test_fft_reference_m16.py
 
   # ---------------------------------------------------------------------------
+  # host-contract-tests — exercises guardrails that must remain runnable
+  # without an NPU, XRT, Peano, or the Windows-only toolchain.
+  # ---------------------------------------------------------------------------
+  host-contract-tests:
+    name: Host-only contracts and public headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install host test dependency
+        run: |
+          python -m pip install --upgrade numpy==2.5.2
+
+      - name: Verify public-header inventory
+        run: |
+          python include/sdr_dsp/verify_m4_headers.py
+
+      - name: Run M33 and protected-runner host contracts
+        run: |
+          python -m unittest -v \
+            tests/test_m33_native_runner_contract.py \
+            tests/test_regression_validation.py
+
+      - name: Run installer self-test
+        run: |
+          python install.py --self-test
+
+      - name: Compile and run public modular-header UBSan properties
+        run: |
+          c++ -std=c++17 -Wall -Wextra -Wconversion -Werror \
+            -fsanitize=signed-integer-overflow -fno-sanitize-recover=all \
+            tools/test_modular_arithmetic_host.cpp -o modular_host_test
+          ./modular_host_test
+
+  # ---------------------------------------------------------------------------
   # markdown-links — external link integrity check for all *.md files.
   # Advisory (continue-on-error) because external sites go down.
   # Config: .github/mlc_config.json
@@ -144,9 +182,9 @@ jobs:
     name: Check Markdown links
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Link check
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31 # 1.0.17
         with:
           use-quiet-mode: "yes"
           use-verbose-mode: "yes"
@@ -187,10 +225,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout phoenix-sdr-dsp
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
@@ -231,7 +269,8 @@ jobs:
 
       - name: Install Python runtime deps (numpy, pyyaml, ml_dtypes)
         run: |
-          python -m pip install --upgrade numpy pyyaml ml_dtypes
+          # ml_dtypes is intentionally unpinned pending validated wheel selection.
+          python -m pip install --upgrade numpy==2.5.2 PyYAML==6.0.3 ml_dtypes
 
       - name: Smoke — CPU reference tests (no NPU required)
         run: |

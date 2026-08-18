@@ -60,7 +60,7 @@ Validation rules:
 | M32b | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM NTT | Silicon-validated, bit-exact |
 | M32c | Post-Quantum Cryptography — [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf) Keccak / SHA-3 / SHAKE | Silicon-validated, bit-exact |
 | M32d | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) K-PKE component | Silicon-validated, bit-exact |
-| M32e | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM.{KeyGen, Encaps, Decaps} composer | Bit-exact vs NIST ACVP-Server KATs |
+| M32e | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM internal-interface composer (Algorithms 16–18, ML-KEM-512) | Matches selected ACVP-Server KATs; not public Algorithms 19–21 coverage |
 | M33a | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA NTT | Silicon-validated, bit-exact |
 | M33b | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) rounding & hint | Silicon-validated, bit-exact |
 | M33d | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA.KeyGen composer | Bit-exact vs NIST ACVP-Server KATs |
@@ -371,7 +371,14 @@ The silicon-validated M15b kernel is a schoolbook O(N²) product in that ring (t
 
 ## M32: FIPS 203 ML-KEM — Post-Quantum Cryptography (v1.0.0, closed)
 
-M32 implements the approved key-encapsulation mechanism in [NIST FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) (*Module-Lattice-Based Key-Encapsulation Mechanism Standard*, 13 August 2024, [DOI 10.6028/NIST.FIPS.203](https://doi.org/10.6028/NIST.FIPS.203)). ML-KEM is derived from round-3 [CRYSTALS-Kyber](https://pq-crystals.org/kyber/data/kyber-specification-round3-20210804.pdf) (FIPS 203 §1.1); implement FIPS 203 when Appendix C lists a difference. All four sub-milestones (M32b, M32c, M32d, M32e) closed on 2026-08-16 and are entries in the 33-entry silicon runner.
+M32 implements selected ML-KEM building blocks and internal deterministic
+interfaces from [NIST FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf)
+(*Module-Lattice-Based Key-Encapsulation Mechanism Standard*, 13 August 2024,
+[DOI 10.6028/NIST.FIPS.203](https://doi.org/10.6028/NIST.FIPS.203)). ML-KEM is
+derived from round-3 [CRYSTALS-Kyber](https://pq-crystals.org/kyber/data/kyber-specification-round3-20210804.pdf)
+(FIPS 203 §1.1); implement FIPS 203 when Appendix C lists a difference. The
+four M32 entries occur in the current 34-invocation mixed-backend runner. M32e
+is limited to ML-KEM-512 internal interfaces, not public Algorithms 19–21.
 
 The three approved parameter sets ([FIPS 203 Table 2](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf)) all use `(n, q) = (256, 3329)`:
 
@@ -381,7 +388,13 @@ The three approved parameter sets ([FIPS 203 Table 2](https://nvlpubs.nist.gov/n
 | ML-KEM-768 | 3 | 2 | 2 | 10 | 4 |
 | ML-KEM-1024 | 4 | 2 | 2 | 11 | 5 |
 
-All three parameter sets are validated against [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) response vectors vendored under `tests/m32_mlkem/vectors/`. NIST's default recommendation is ML-KEM-768 (FIPS 203 §8). Hashes are [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf) SHA3-256, SHA3-512, SHAKE128, and SHAKE256 (FIPS 203 §4.1) — all four dispatch from the M32c Keccak-f[1600] kernel. K-PKE (Algorithms 13–15) is a component only and is not approved as a standalone PKE (FIPS 203 §3.3); it is wrapped by M32e.
+The repository's M32e tests select ML-KEM-512 vectors from the vendored
+[NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) response files;
+ML-KEM-768 and ML-KEM-1024 are not claimed as implemented or validated here.
+Hashes are [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf)
+SHA3-256, SHA3-512, SHAKE128, and SHAKE256 (FIPS 203 §4.1). K-PKE
+(Algorithms 13–15) is a component only and is not approved as a standalone PKE
+(FIPS 203 §3.3).
 
 ### M32b — NTT-domain negacyclic product ([FIPS 203 Algorithms 9–12](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf))
 
@@ -395,9 +408,13 @@ Single Keccak-f[1600] permutation ([FIPS 202](https://nvlpubs.nist.gov/nistpubs/
 
 Silicon-dispatched K-PKE.KeyGen / Encrypt / Decrypt orchestrated on top of M32b + M32c. Silicon kernel: `tests/m32_mlkem/kpke_kernel.cc`. Design: [`docs/M32d_DESIGN.md`](M32d_DESIGN.md). Not approved standalone.
 
-### M32e — ML-KEM.KeyGen / Encaps / Decaps composer ([FIPS 203 Algorithms 19–21](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf))
+### M32e — ML-KEM internal-interface composer ([FIPS 203 Algorithms 16–18](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf))
 
-Composer `tests/m32_mlkem/mlkem_composer.py` routes all three approved algorithms through the M32b + M32c + M32d kernels via a `SiliconBackend` seam. Bit-exact against NIST ACVP-Server ML-KEM-{512, 768, 1024} keyGen and encapDecap tgIds — 60 passed / 9 skipped on sandbox reference path, gated silicon on laptop. Design: [`docs/M32e_DESIGN.md`](M32e_DESIGN.md).
+Composer `tests/m32_mlkem/mlkem_composer.py` implements `mlkem_*_internal`
+functions and routes selected ML-KEM-512 ACVP-Server KATs through the M32b +
+M32c + M32d kernels via a `SiliconBackend` seam. The recorded scope is 60 host
+KATs and a nine-vector silicon smoke gate; it is not a public ML-KEM API or
+all-parameter-set claim. Design history: [`docs/M32e_DESIGN.md`](M32e_DESIGN.md).
 
 ## M33: FIPS 204 ML-DSA — Post-Quantum Cryptography (v1.0.0, closed)
 
@@ -504,16 +521,16 @@ Measured throughput on Phoenix NPU1 is about 1,993 FFTs per second, or about 0.5
 
 M19 extends the [M5](#m5-8-tap-vectorized-fir-filter) real-valued FIR to a complex-tap filter operating on complex I/Q input. For an 8-tap complex filter with taps `c[k] = cI[k] + j·cQ[k]` and complex input `x[n] = I[n] + j·Q[n]`, the output is
 
-\[
+$$
 y[n] = \sum_{k=0}^{7} c[k] \cdot x[n-k]
-\]
+$$
 
 Expanding into the real and imaginary parts,
 
-\[
+$$
 I_y[n] = \sum_{k=0}^{7} \bigl(cI[k]\, I[n-k] - cQ[k]\, Q[n-k]\bigr), \quad
 Q_y[n] = \sum_{k=0}^{7} \bigl(cI[k]\, Q[n-k] + cQ[k]\, I[n-k]\bigr)
-\]
+$$
 
 four dot products per output, same shift-register schedule as M5/M8. The kernel is bit-accurate against a NumPy reference at atol=0.01 on impulse, DC, tone, random I/Q, and M5-degeneracy (setting `cQ[k]=0` reproduces M5 exactly). See [docs/M19_DESIGN.md](M19_DESIGN.md).
 
@@ -523,23 +540,23 @@ M20 puts a two-stage polyphase multirate resampler on one AIE2 core. Stage 1 dec
 
 The efficient polyphase form decomposes `h` into `M` sub-filters `p_k[r] = h[r·M + k]`, so
 
-\[
+$$
 y_{\text{decim}}[m] = \sum_{k=0}^{M-1} \sum_{r=0}^{N/M-1} p_k[r]\, x[(m-r)\cdot M - k]
-\]
+$$
 
 and symmetrically for the interpolator with `q_k[r] = h_i[r·L + k]`,
 
-\[
+$$
 y_{\text{interp}}[m\cdot L + k] = \sum_{r=0}^{N/L-1} q_k[r]\, x[m-r], \quad k = 0,\ldots,L-1
-\]
+$$
 
 [Vaidyanathan 1993 ch. 4](https://www.pearson.com/en-us/subject-catalog/p/multirate-systems-and-filter-banks/P200000003431/9780130349507) Eq. 4.3.5 and Eq. 4.3.13, [Harris 2004 ch. 6](https://ieeexplore.ieee.org/book/9448967) Fig. 6.7. This is not a rate-efficient hardware factoring (the fused kernel evaluates the full 16-tap dot product per output rather than a 4-tap branch, matching the M5/M8 shift-register schedule); the polyphase language is used for the derivation and for the tap-scaling convention.
 
 Following [`scipy.signal.resample_poly`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample_poly.html) and [GNU Radio pfb](https://www.gnuradio.org/doc/doxygen-3.7/page_pfb.html), the interpolator side scales the prototype by `L` (`taps *= up`) to compensate the 1/L amplitude loss from zero-insertion upsampling. Combined end-to-end DC gain is therefore
 
-\[
+$$
 \text{gain}_{\text{DC}} = \frac{\sum h_d \cdot \sum h_i}{L} = \frac{1 \cdot L}{L} = 1
-\]
+$$
 
 bit-comparable to [`scipy.signal.upfirdn`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.upfirdn.html) on the same tap arrays (verified to ≤ 0.001 in the sandbox on DC input; startup-transient boundary conventions differ but steady-state gain matches to bfloat16 precision).
 
@@ -549,9 +566,9 @@ The fused-kernel choice (one Worker, one xclbin, no chained `ObjectFifo`) follow
 
 M21 shifts a real-world radio signal that sits at an intermediate frequency down to complex baseband and then reduces the sample rate, all inside one fused AIE2 kernel:
 
-\[
+$$
 y[m] \;=\; \text{decim}_{M} \big\{ h * \big(x[n] \cdot e^{-j 2\pi f_c n / f_s}\big) \big\}
-\]
+$$
 
 The kernel does the mix, filter, and decimation together on one core with no intermediate `ObjectFifo`, following the M8 fused-pipeline pattern. The signal-chain topology is the canonical DDC of [Harris 2004 ch. 8](https://ieeexplore.ieee.org/book/9448967) and mirrors GNU Radio's [Frequency Xlating FIR Filter](https://wiki.gnuradio.org/index.php/Frequency_Xlating_FIR_Filter) block, which likewise fuses complex NCO + real-tap FIR + integer decimation.
 
@@ -575,11 +592,11 @@ See [docs/M21_DESIGN.md](M21_DESIGN.md).
 
 ## M22: fused digital up-converter (DUC)
 
-M22 is the mathematical inverse of M21. It takes a narrowband complex baseband signal, raises the sample rate by `L = 4`, and shifts it up to an intermediate frequency — all inside one fused AIE2 kernel:
+M22 is a complementary DUC signal chain to M21. It takes a narrowband complex baseband signal, raises the sample rate by `L = 4`, and shifts it up to an intermediate frequency — all inside one fused AIE2 kernel:
 
-\[
+$$
 y[n] \;=\; \big(h \ast \text{upsample}_{L}\{x_{bb}[m]\}\big) \cdot e^{+j 2\pi f_c n / f_s}
-\]
+$$
 
 The zero-stuff-and-filter interpolation is evaluated in polyphase form so the kernel never materialises the zero-stuffed intermediate stream. Each baseband input feeds a 4-slot shift register, and the 16-tap prototype is decomposed into `L = 4` branches of 4 taps each, one per output phase. This is the commutator identity of [Vaidyanathan 1993 §4.3, Eq. 4.3.13](https://dl.acm.org/doi/10.5555/151045) and [Harris 2004 ch. 7](https://ieeexplore.ieee.org/book/9448967), and matches the [GNU Radio Frequency Xlating FIR Filter](https://wiki.gnuradio.org/index.php/Frequency_Xlating_FIR_Filter) block run with negative decimation (interp). The DUC signal-chain topology is [Harris 2004 §8.4 "The Digital Up-Converter"](https://ieeexplore.ieee.org/book/9448967).
 
@@ -601,9 +618,9 @@ See [docs/M22_DESIGN.md](M22_DESIGN.md).
 
 M23 closes the DSP-track filtering & resampling block. It takes a wideband complex baseband signal at rate `f_s` and simultaneously splits it into `M = 8` uniformly spaced sub-channels, each at rate `f_s / M` — the workhorse of frequency-division multiple-access receivers ([Harris 2004 ch. 6](https://ieeexplore.ieee.org/book/9448967); [Rondeau, "Designing Analysis and Synthesis Filterbanks in GNU Radio"](https://static.squarespace.com/static/543ae9afe4b0c3b808d72acd/543aee1fe4b09162d08633d9/543aee20e4b09162d086354a/1395369129837/rondeau_gr_filtering.pdf)):
 
-\[
+$$
 y_k[m] \;=\; \sum_{n=0}^{M-1} v_n[m]\, e^{-j 2\pi k n / M}, \quad v_p[m] \;=\; \sum_{k=0}^{K-1} h_p[k]\, x_p[m-k]
-\]
+$$
 
 where `h_p[k] = h[p + k·M]` is the polyphase decomposition of the length-64 prototype into `M = 8` branches of `K = 8` taps each ([Vaidyanathan 1993 §4.3, Eq. 4.3.13](https://dl.acm.org/doi/10.5555/151045); [Harris 2004 §6.3, Fig. 6.8](https://ieeexplore.ieee.org/book/9448967)), and the outer sum is an `M`-point analysis-convention DFT (sign `-j`, matching [scipy.fft.fft](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.fft.html)).
 
@@ -625,15 +642,15 @@ See [docs/M23_DESIGN.md](M23_DESIGN.md).
 
 M24 opens the modulation & synchronization block. It takes a wideband complex baseband I/Q stream and produces the matched-filter response to a known Barker-13 preamble at every sample, which is the workhorse of PPDU-boundary detection in DSSS receivers ([Proakis & Salehi 5e §5.1.5](https://www.mheducation.com/highered/product/digital-communications-proakis-salehi/M9780072957167.html); [Massey 1972](https://ieeexplore.ieee.org/document/1091459); [Skolnik *Radar Handbook* 3e ch. 8](https://www.accessengineeringlibrary.com/content/book/9780071485470)):
 
-\[
+$$
 y[n] \;=\; \sum_{k=0}^{L-1} \overline{s[k]}\, x[n+k], \qquad s \in \{+1,-1\}^{L}, \; L = 13
-\]
+$$
 
 The Barker-13 preamble `s = (+1,+1,+1,+1,+1,-1,-1,+1,+1,-1,+1,-1,+1)` has aperiodic autocorrelation `|c_v| ≤ 1` for all `v ≠ 0` and peak `c_0 = 13`, giving a 22.3 dB power PSL ([Barker 1953](https://ieeexplore.ieee.org/document/6773685); [Wikipedia "Barker code"](https://en.wikipedia.org/wiki/Barker_code)). Because `s` is real, `conj(s) = s` and the complex correlator splits into two independent real FIRs on I and Q ([Oppenheim & Schafer 3e §2.6.2](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003543)):
 
-\[
+$$
 I_y[n] = \sum_{k=0}^{L-1} s[k]\, I_x[n+k], \qquad Q_y[n] = \sum_{k=0}^{L-1} s[k]\, Q_x[n+k]
-\]
+$$
 
 By the correlation-as-reversed-FIR identity, the same output stream is produced by a causal FIR with reversed taps `h[k] = s[L-1-k] = (+1,-1,+1,-1,+1,+1,-1,-1,+1,+1,+1,+1,+1)` applied via the standard past-history convolution `y[i] = Σ_k h[k]·x[i-k]`, with fixed group delay `L-1 = 12`. This lets the kernel reuse the M8/M19 shift-and-ingest schedule verbatim with zero-history warmup for `n < 12`. Block topology matches the [GNU Radio Correlation Estimator](https://wiki.gnuradio.org/index.php/Correlation_Estimator) and [liquid-dsp `detector_cccf`](https://liquidsdr.org/doc/detector/).
 
@@ -745,14 +762,14 @@ The runner reports pass/fail status and elapsed time for:
 26. M32b Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM NTT (Algorithms 9–12, `Z_3329`, pq-crystals ζ-table)
 27. M32c Post-Quantum Cryptography — [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf) Keccak-f[1600] + SHA-3 / SHAKE + [FIPS 203 Algorithms 7–8](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) samplers
 28. M32d Post-Quantum Cryptography — [FIPS 203 Algorithms 13–15](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) K-PKE component (not standalone approved)
-29. M32e Post-Quantum Cryptography — [FIPS 203 Algorithms 19–21](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM.KeyGen / Encaps / Decaps composer against [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) KATs
+29. M32e Post-Quantum Cryptography — [FIPS 203 Algorithms 16–18](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM internal-interface composer against selected [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) KATs
 30. M33a Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA NTT / INTT / basemul (`Z_8380417`, Montgomery form)
 31. M33b Post-Quantum Cryptography — [FIPS 204 Algorithms 30–33](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) rounding & hint (Decompose / MakeHint / UseHint / CheckNorm)
 32. M33d Post-Quantum Cryptography — [FIPS 204 Algorithm 6](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA.KeyGen composer against NIST ACVP-Server KATs
 33. M33e Sign Post-Quantum Cryptography — [FIPS 204 Algorithm 7](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA.Sign_internal composer against NIST ACVP-Server sigGen KATs (90/90)
 34. M33e Verify Post-Quantum Cryptography — [FIPS 204 Algorithm 8](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA.Verify_internal composer against NIST ACVP-Server sigVer KATs (90/90)
 
-M0–M2 are setup and reproducibility milestones, while M4 depends on locally attached SDR hardware; therefore they are not entries in the automated regression runner. M32e, M33d, M33e Sign, and M33e Verify are host/NPU compositions rather than fully device-resident algorithms. M32b–M32e and M33a–M33e require the Post-Quantum Cryptography reference packages (`kyber-py`, `dilithium-py`, plus `pytest`) pinned in [`requirements/toolchain-versions.md`](../requirements/toolchain-versions.md) and auto-installed into `ironenv` by `install.py`. SHAKE / SHA-3 host operations use the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required.
+M0–M2 are setup and reproducibility milestones, while M4 depends on locally attached SDR hardware; therefore they are not entries in the automated regression runner. M32e, M33d, M33e Sign, and M33e Verify are host/NPU compositions rather than fully device-resident algorithms. M32b–M32e and M33a–M33e require version-pinned `kyber-py`, `dilithium-py`, and `pytest`; the complete dependency closure is not yet hash-locked. SHAKE / SHA-3 host operations use the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required.
 
 ## Practical verification checklist
 

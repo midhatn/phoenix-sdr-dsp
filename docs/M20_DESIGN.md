@@ -227,7 +227,9 @@ for m in 0 .. 511:
     Iy[m * L + k], Qy[m * L + k] = Iacc, Qacc
 ```
 
-512 outer iterations × 4 output phases × 4 taps = 8192 output samples total. Both inner loops are plain `for` loops with no unroll hints (see §8.1).
+512 outer iterations × 4 output phases × 4 taps = 8192 scalar tap products.
+The interpolator emits 2048 complex output samples (4096 scalar I/Q slots).
+Both inner loops are plain `for` loops with no unroll hints (see §8.1).
 
 ### 5.3 Fused dispatch (M8 pattern)
 

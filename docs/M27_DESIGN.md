@@ -8,7 +8,17 @@
 
 ## 1. Purpose
 
-M27 delivers a fused OFDM loopback (TX + on-tile channel + RX) on a single AIE2 core on the AMD Phoenix NPU. The kernel executes the full physical-layer chain of an 802.11a-style OFDM burst — Gray-labelled QAM-16 payload mapped onto 48 data subcarriers, 4 BPSK pilots inserted at `k ∈ {−21, −7, +7, +21}`, IFFT to time domain, cyclic-prefix prepending, propagation through a compiled-in 4-tap complex FIR channel, CP stripping at RX, forward FFT, least-squares (LS) channel estimation on the pilot subcarriers, linear interpolation across the 48 data-carrying subcarriers, and per-subcarrier zero-forcing (ZF) equalization ([IEEE 802.11-2020 §17](https://standards.ieee.org/ieee/802.11/7028/); [van de Beek et al 1997](https://doi.org/10.1109/78.611176); [Coleri et al 2002](https://ieeexplore.ieee.org/document/1035788)).
+M27 delivers a fused OFDM loopback (TX + on-tile channel + RX) on a single AIE2
+core on the AMD Phoenix NPU. The kernel executes the full physical-layer chain
+of an 802.11a-style OFDM burst — Gray-labelled QAM-16 payload mapped onto 48
+data subcarriers, 4 BPSK pilots inserted at `k ∈ {−21, −7, +7, +21}`, IFFT to
+time domain, cyclic-prefix prepending, propagation through a runtime-supplied
+4-tap complex FIR channel, CP stripping at RX, forward FFT, least-squares (LS)
+channel estimation on the pilot subcarriers, linear interpolation across the 48
+data-carrying subcarriers, and per-subcarrier zero-forcing (ZF) equalization
+([IEEE 802.11-2020 §17](https://standards.ieee.org/ieee/802.11/7028/);
+[van de Beek et al 1997](https://doi.org/10.1109/78.611176);
+[Coleri et al 2002](https://ieeexplore.ieee.org/document/1035788)).
 
 This is the first OFDM milestone in the M-suite and the first kernel to textually `#include` the M17 FFT source in-file rather than relying on `@iron.jit`'s `ExternalFunction` composition. M17's own wrapper (`tests/m17_radix2_fft/fft64_r4_wrapper.cc`) documents this pattern: `iron.jit`'s `ExternalFunction` (as of `mlir-aie` 1.4.1) does not expose a first-class way to inject preprocessor defines into a kernel source file, so the wrapper defines `FFT_SIZE 64` and textually includes the kernel. M27 does the same and reuses the FFT twice — once as forward for the RX FFT, once as inverse via the conjugate trick `IFFT(X) = conj(FFT(conj(X))) / N` for the TX IFFT.
 
@@ -18,9 +28,9 @@ This is the first OFDM milestone in the M-suite and the first kernel to textuall
 
 Following [Weinstein & Ebert 1971](https://doi.org/10.1109/TCOM.1971.1090705) (the paper that first proposed DFT-based OFDM implementation) and [Chang 1966](https://ieeexplore.ieee.org/document/6768493) (the parent multicarrier concept), a discrete-time OFDM symbol of `N` subcarriers is
 
-\[
+$$
 x[n] = \frac{1}{N} \sum_{k=0}^{N-1} X[k]\, e^{j 2\pi k n / N}, \qquad n = 0, 1, \dots, N-1
-\]
+$$
 
 which is exactly the inverse DFT of the frequency-domain symbol vector `X[k]`. Reception is the forward DFT `Y[k] = \sum_n y[n] e^{-j 2\pi k n / N}`. On our hardware both directions reuse the M17 forward FFT: the inverse is `x = conj(FFT(conj(X))) / N`, an identity from [Oppenheim & Schafer 3e §8.5](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003543).
 
@@ -28,9 +38,9 @@ which is exactly the inverse DFT of the frequency-domain symbol vector `X[k]`. R
 
 Following [Peled & Ruiz 1980](https://doi.org/10.1109/ICASSP.1980.1171076), a length-`Ncp` cyclic prefix `x[N-Ncp], x[N-Ncp+1], …, x[N-1]` is prepended to each `x` before transmit. The mathematical purpose is to convert a linear convolution with the channel `h[n]` into a *circular* convolution modulo `N` — provided the channel impulse response satisfies `L_h ≤ Ncp + 1`. Under that condition, the received frequency-domain vector after CP removal is exactly the per-subcarrier product
 
-\[
+$$
 Y[k] = H[k] \cdot X[k] + W[k], \qquad k = 0, 1, \dots, N-1
-\]
+$$
 
 where `H[k]` is the DFT of the channel impulse response and `W[k]` is the DFT of the additive noise. Because there is no inter-carrier crosstalk, one-tap-per-subcarrier equalization is optimal in the zero-forcing sense.
 
@@ -38,15 +48,15 @@ where `H[k]` is the DFT of the channel impulse response and `W[k]` is the DFT of
 
 Following [Coleri et al 2002](https://ieeexplore.ieee.org/document/1035788) (comb-type pilot arrangement) and [van de Beek et al 1997](https://doi.org/10.1109/78.611176), the least-squares channel estimate on the pilot subcarriers is
 
-\[
+$$
 \hat H_p[k_p] = \frac{Y[k_p]}{X_p[k_p]}, \qquad k_p \in \{-21, -7, +7, +21\}
-\]
+$$
 
 with pilots `X_p[k_p] = ±1` (BPSK). Because pilots are BPSK, the division reduces to a signed pass-through of `Y[k_p]`. Estimates on data subcarriers are obtained by piecewise linear interpolation in `k`:
 
-\[
+$$
 \hat H_d[k] = \hat H_p[k_a] + (k - k_a) \cdot \frac{\hat H_p[k_b] - \hat H_p[k_a]}{k_b - k_a}
-\]
+$$
 
 where `(k_a, k_b)` is the pair of adjacent pilots bracketing data subcarrier `k`. For data subcarriers outside the outermost pilots — `k < -21` or `k > +21` — the estimate is extrapolated by using the nearest pair of pilots on the interior side (equivalent to holding the linear-interp slope past the boundary). This is the same policy documented in [Rice 2e Ch 8](https://www.pearson.com/en-us/subject-catalog/p/digital-communications-a-discrete-time-approach/P200000003544).
 
@@ -71,7 +81,10 @@ Following [IEEE 802.11-2020 §17.3.5](https://standards.ieee.org/ieee/802.11/702
 | `+7, +21` | Pilot (BPSK) | 2 (of 4) |
 | `+27 … +31` | Guard (zero) | 5 |
 
-Total: 48 data + 4 pilot + 11 guard + 1 DC = 64. The IDFT-input buffer follows the standard fftshift layout: DC at index 0, positive frequencies at indices `1..31`, negative frequencies at indices `32..63` (which correspond to `k = -32 .. -1`). All indexing in the kernel and host is done in the "natural" `[0..63]` FFT order after this once-off remap.
+Total: 48 data + 4 pilot + 11 guard + 1 DC = 64. The IDFT-input buffer uses
+native, unshifted FFT order: DC is at index 0, positive frequencies are at
+indices `1..31`, and negative frequencies are at indices `32..63` (which
+correspond to `k = -32 .. -1`). No `fftshift` layout is used.
 
 Pilot polarity follows the [IEEE 802.11-2020 §17.3.5.10](https://standards.ieee.org/ieee/802.11/7028/) sign convention: `p = (+1, +1, +1, -1)` for pilots at `k ∈ {-21, -7, +7, +21}` on OFDM symbol 0. Higher symbols multiply this vector by a scrambling sequence; for M27's first-bring-up test we hold the pilot pattern constant across all 8 symbols in the burst, which is a valid simplification since we do not exercise frame-level scrambling.
 
@@ -96,7 +109,13 @@ Steps 1–3 are the TX side; step 4 is the channel model; steps 5–10 are the R
 
 The `#include`-then-call pattern matches M17's own `fft64_r4_wrapper.cc` exactly. Because the M17 kernel file contains its own `extern "C" { void fft_stockham_f32(...) { … } }`, textually including it inside `ofdm_loopback_kernel.cc` produces a per-tile inline instance of `fft_stockham_f32` compiled for `FFT_SIZE 64`. The M27 kernel calls this symbol six times per OFDM burst (2 × 8 = 16 FFTs total: 8 IFFTs on TX, 8 forward FFTs on RX; the 6× / 16× discrepancy in an earlier draft was corrected here).
 
-The FFT kernel is defined once inside the M27 kernel's translation unit. Program-memory budget check: M17's fused radix-4 Stockham at `N=64` compiles to ~5 KB program memory ([M17_DESIGN.md](M17_DESIGN.md) §5). Including it once in M27 gives one copy of the FFT code, not sixteen — the same function is called sixteen times. This fits inside the AIE2 tile's 16 KB program memory budget with the additional pilot LS + linear interp + ZF equalization overhead.
+The FFT kernel is defined once inside the M27 kernel's translation unit.
+Program-memory budget check: M17's fused radix-4 Stockham at `N=64` compiles
+to ~5 KB program memory ([M17_V3_DESIGN.md](M17_V3_DESIGN.md) §5). Including
+it once in M27 gives one copy of the FFT code, not sixteen — the same function
+is called sixteen times. This fits inside the AIE2 tile's 16 KB program memory
+budget with the additional pilot LS + linear interpolation + ZF equalization
+overhead.
 
 ## 5. Why gate (c) is assertable (contrast with M25/M26)
 
@@ -105,9 +124,11 @@ M25 and M26 gate (c) had to become diagnostic because the receiver contained two
 OFDM RX is **open-loop** given a synchronized frame. There is no timing integrator (frame boundary is known); there is no carrier-tracking integrator (residual CFO is folded into the channel estimate). The whole receiver is a fixed sequence of arithmetic operations: FFT → pilot pass-through → linear interpolation → complex divide. The same input samples produce the same output samples up to bf16 quantization, whether run on CPU or AIE2. Therefore:
 
 - **Gate (a) transliteration** stays asserted — the kernel is deterministic and bit-exact vs the host reference (0/`N` slots differ on ≥2 seeds).
-- **Gate (c) SER < 0.01** stays asserted at SNR = 20 dB. Rayleigh-flat + Gaussian noise are injected by the host on the transmitted samples between two dispatches (or as a distinct test case with channel taps = `[1, 0, 0, 0]`), so both silicon and host see the same noisy input and produce the same equalized output.
-
-The two-dispatch pattern for the noise-tolerance gate: dispatch 1 runs the kernel with the identity channel `[1, 0, 0, 0]` and captures the TX output at the CP-add stage; the host then adds Rayleigh × AWGN; dispatch 2 runs the kernel again with identity channel and feeds the noisy samples in via a separate input path. This is described in §6.
+- **Gate (c) is a post-equalizer AWGN sensitivity diagnostic.** The current
+  test dispatches the identity-channel loopback once, then adds AWGN to the
+  equalized host output before hard slicing. It does not inject Rayleigh fading
+  or AWGN before CP removal, FFT, LS estimation, or ZF equalization, and it is
+  not evidence of noisy-channel receive-chain validation.
 
 ## 6. Test plan
 
@@ -124,8 +145,14 @@ Implemented as `tests/m27_ofdm/test_ofdm_m27.py`. The suite has **4 reference-on
 
 - **Gate (a) — transliteration bit-exact.** With deterministic seed 827, kernel output on silicon matches host reference bit-for-bit on all 384 equalized data subcarriers (`0/768 bf16 slots differ`).
 - **Gate (b) — EVM ≤ 3% on delay-spread channel.** With channel taps `[1.0, 0.4, 0.2, 0.1] + j·[0.0, 0.1, 0.05, 0.02]` (`L_h = 4 ≤ N_cp + 1 = 17`), no noise, EVM on the 384 equalized data subcarriers ≤ 3%.
-- **Gate (c) — SER < 0.01 asserted at SNR = 20 dB.** Rayleigh-flat channel + AWGN (host-injected on TX output between two identity-channel dispatches). Hard-slice each equalized data subcarrier to nearest QAM-16 constellation point. Assert `SER < 0.01`.
-- **Gate (c-diag) — EVM_dB printout.** Same test as (c), diagnostic-only, target `EVM_dB ≥ 25 dB` per [IEEE 802.11-2020 §17.3.9.7.3](https://standards.ieee.org/ieee/802.11/7028/) minimum for QAM-16.
+- **Gate (c) — post-equalizer AWGN diagnostic.** The test adds host-side AWGN
+  at SNR = 20 dB after an identity-channel dispatch, then hard-slices each
+  equalized data subcarrier. It is not a channel-estimation or fading-channel
+  test.
+- **Gate (c-diag) — EVM display only.** The current code prints
+  `20 log10(EVM)`, which is negative when EVM is below 100%. The legacy
+  positive “≥ 25 dB” wording is sign-inconsistent and is not an acceptance
+  criterion.
 - **Gate (d) — pilot-only sanity.** Channel taps `[1, 0, 0, 0]`, data slots all zero, pilots `±1`. After LS + linear-interp + ZF, verify the equalized pilot subcarriers return as `±1` to `1e-3` relative error.
 
 ## 7. Bring-up incidents
@@ -155,7 +182,8 @@ Implemented as `tests/m27_ofdm/test_ofdm_m27.py`. The suite has **4 reference-on
 - Stockham, "High Speed Convolution and Correlation", *AFIPS Spring Joint Computer Conf.* 1966. https://doi.org/10.1145/1464291.1464335
 
 ### Internal cross-refs
-- [M17_DESIGN.md](M17_DESIGN.md) — radix-4 Stockham FFT at N=64; twiddle-pack format; `fft_stockham_f32` symbol.
+- [M17_V3_DESIGN.md](M17_V3_DESIGN.md) — radix-4 Stockham FFT at N=64;
+  twiddle-pack format; `fft_stockham_f32` symbol.
 - [M25_DESIGN.md](M25_DESIGN.md) §4b — bring-up incidents 1–4 (open-coded Taylor sin/cos; sign-bit reinterpret; `-O2` copysign folding; closed-loop float rounding drift).
 - [M26_DESIGN.md](M26_DESIGN.md) Amendment #1 — receiver-theoretic gate discipline for closed-loop kernels; motivates the open-loop rationale in §5 above.
 - [MILESTONES_AND_MATHEMATICS.md](MILESTONES_AND_MATHEMATICS.md) — canonical math ledger.

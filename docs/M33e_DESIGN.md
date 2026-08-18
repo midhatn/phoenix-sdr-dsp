@@ -29,18 +29,18 @@ Both parameter sets and both `externalMu` conventions from the NIST ACVP
 
 ```text
 rho, K, tr, s1, s2, t0    = UnpackSK(sk)
-A_hat                      = ExpandA(rho)                                # M32c inside
+A_hat                      = ExpandA(rho)                                # host SHAKE path
 s1_hat, s2_hat, t0_hat     = NTT(s1), NTT(s2), NTT(t0)                   # M33a mode 0
 
-mu     = external_mu ? m : H(tr || m, 64)                                # M32c
-rho''  = H(K || rnd || mu, 64)                                           # M32c
+mu     = external_mu ? m : H(tr || m, 64)                                # host SHAKE path
+rho''  = H(K || rnd || mu, 64)                                           # host SHAKE path
 kappa  = 0
 loop:
-    y      = ExpandMask(rho'', kappa);                kappa += ell       # M32c inside
+    y      = ExpandMask(rho'', kappa);                kappa += ell       # host SHAKE path
     y_hat  = NTT(y)                                                       # M33a mode 0
     w      = INTT(A_hat . y_hat)                                          # M33a modes 2, 1
     w1     = HighBits(w, alpha)                                           # M33b mode 1 first output
-    c_tilde = H(mu || Pack_w(w1), c_tilde_bytes)                         # M32c
+    c_tilde = H(mu || Pack_w(w1), c_tilde_bytes)                         # host SHAKE path
     c      = SampleInBall(c_tilde, tau)                    # host, rejection loop
     c_hat  = NTT(c)                                                        # M33a mode 0
     z      = y + INTT(c_hat . s1_hat)                                     # M33a modes 2, 1
@@ -65,14 +65,14 @@ rho, t1                    = UnpackPK(pk)
 c_tilde, z, h              = UnpackSig(sig)               # ValueError -> return False
 if popcount(h) > omega: return False                       # host
 if !CheckNorm(z, gamma_1 - beta): return False             # M33b mode 4
-A_hat                      = ExpandA(rho)                  # M32c inside
-mu = external_mu ? m : H(H(pk,64) || m, 64)                # M32c
+A_hat                      = ExpandA(rho)                  # host SHAKE path
+mu = external_mu ? m : H(H(pk,64) || m, 64)                # host SHAKE path
 c  = SampleInBall(c_tilde, tau);   c_hat = NTT(c)          # M33a mode 0
 z_hat = NTT(z)                                             # M33a mode 0
 t1_hat = NTT(t1 * 2^d)                                     # M33a mode 0
 diff = INTT(A_hat . z_hat - c_hat . t1_hat)                # M33a 2, 1
 w' = UseHint(h, diff, alpha)                               # M33b mode 3
-return c_tilde == H(mu || Pack_w(w'), c_tilde_bytes)       # M32c
+return c_tilde == H(mu || Pack_w(w'), c_tilde_bytes)       # host SHAKE path
 ```
 
 ## Silicon dispatch surface

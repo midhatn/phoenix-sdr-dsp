@@ -1,7 +1,8 @@
 # Phoenix SDR-DSP Toolchain Lock
 # ------------------------------
-# Machine-readable, canonical record of the exact software + hardware stack
-# under which the 16-milestone silicon regression suite is verified.
+# Machine-readable record of the exact software + hardware stack under which
+# the historical v0.4.0 16-milestone silicon suite was verified. It is not a
+# current 34-entry validation manifest.
 #
 # Update this file whenever a component version changes AND the full regression
 # passes on that new combination. Human-readable rationale lives in

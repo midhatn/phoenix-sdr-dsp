@@ -1,5 +1,21 @@
 # Security Policy
 
+## Research and cryptography boundary
+
+Phoenix SDR-DSP is a research and validation corpus, **not a production
+cryptographic library**. The M32 ML-KEM and M33 ML-DSA work exercises selected
+internal deterministic interfaces and host/NPU compositions; it does not claim
+deployment-ready public API coverage, constant-time behavior, side-channel
+resistance, fault resistance, secure key storage, or certification.
+
+Do not use this repository to protect production traffic, signatures, keys, or
+other secrets. In particular, its known-answer-vector checks are not a
+substitute for ACVP/CAVP/CMVP validation. FIPS 203 defines ML-KEM internal
+interfaces separately from application-facing algorithms, and FIPS 204 states
+that ML-DSA internal interfaces are for validation testing rather than
+applications: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf and
+https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf.
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in Phoenix SDR-DSP, please **do not**
@@ -36,8 +52,8 @@ confirmed, we will work on a fix and coordinate a disclosure timeline with you.
   crash the NPU, corrupt DMA buffers, or hang XRT.
 - Numerical correctness regressions that break bit-exact verification against
   reference implementations.
-- Reproducibility issues in the toolchain lock (`toolchain.yaml`,
-  `scripts/bootstrap_env.ps1`).
+- Reproducibility issues in the pinned toolchain record (`toolchain.yaml`,
+  `install.py`, or the compatibility bootstrap wrapper).
 
 **Out of scope (report upstream):**
 

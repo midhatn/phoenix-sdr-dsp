@@ -12,7 +12,8 @@
 
 ## Silicon impact
 
-- [ ] Full regression `python run_all_silicon_tests.py` still passes 12/12 bit-accurate
+- [ ] Hardware-affecting change: full 34-invocation protected regression was
+      run on validated hardware; paste its summary and backend boundary below
 - [ ] N/A — no kernel or host-runtime changes
 
 <!-- If you ran the regression, paste the SUMMARY block from run_all_silicon_tests.py here. -->

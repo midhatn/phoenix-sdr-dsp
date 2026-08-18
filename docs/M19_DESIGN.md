@@ -1,6 +1,10 @@
 # M19 — Complex FIR filter (complex taps × complex I/Q input)
 
-Status: **DESIGN** — canonical §16 M19 gap identified in [`docs/ROADMAP.md`](ROADMAP.md#filtering--resampling-canonical-16-m19m23) where M19 is marked ✅ (partial) because the shipped M5 kernel is a real-valued 8-tap FIR on bfloat16, not the complex-taps × complex-I/Q variant §16 M19 asks for. This document specifies the additive M19 kernel, host driver, and NumPy reference. The shipped `tests/m5_fir/` real FIR is not modified. New artifact tree is `tests/m19_complex_fir/`.
+Status: **historical design note; implementation shipped.** M19 is a current
+entry in the protected 34-invocation matrix. This document preserves the
+original design rationale; the source/test pair in
+[`tests/m19_complex_fir/`](../tests/m19_complex_fir/) is authoritative for
+the implemented causal shift-and-ingest convention.
 
 ## 1. Scope and non-goals
 
@@ -24,9 +28,9 @@ Status: **DESIGN** — canonical §16 M19 gap identified in [`docs/ROADMAP.md`](
 
 For a length-`L` FIR with taps `h[0..L-1]` acting on input `x[n]`, the direct-form output is ([Oppenheim & Schafer, *Discrete-Time Signal Processing*, 3rd ed., Prentice Hall, 2010, §5.2](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003286/9780137348244); [Rice University OpenStax DSP chapter](https://repository.rice.edu/server/api/core/bitstreams/01e9e0a5-fa6f-453d-a1b5-8209fa0a565c/content))
 
-\[
+$$
 y[n] \;=\; \sum_{k=0}^{L-1} h[k]\,x[n-k].
-\]
+$$
 
 For the M19 kernel we adopt the causal-forward tap indexing already used by `tests/m5_fir/` — i.e. `out[i] = sum_{k=0}^{L-1} h[k] * in[i + k]`, `L = 8`, zero-pad past the buffer end. This is a phase-shifted (by `L-1` samples) direct form of the same filter and is the M5 convention we must degenerate to when `Qh = 0` and `Qx = 0`, so we keep it.
 
@@ -34,9 +38,9 @@ For the M19 kernel we adopt the causal-forward tap indexing already used by `tes
 
 With `x = Ix + j·Qx` and `h = Ih + j·Qh`,
 
-\[
+$$
 (Ix + jQx)\,(Ih + jQh) \;=\; (Ix\,Ih - Qx\,Qh) \;+\; j\,(Ix\,Qh + Qx\,Ih),
-\]
+$$
 
 which is the same identity M6 uses for `(I + jQ)·(cos + j·sin)` in [`tests/m6_mixer/mixer_kernel.cc`](../tests/m6_mixer/mixer_kernel.cc) (lines 41–42) and is a textbook complex product ([NIST Digital Library of Mathematical Functions §1.9](https://dlmf.nist.gov/1.9); [Oppenheim & Schafer §2.2](https://www.pearson.com/en-us/subject-catalog/p/discrete-time-signal-processing/P200000003286/9780137348244)).
 
@@ -78,17 +82,20 @@ The reference performs the same operation the kernel does, in the same order, wi
     Ix      = in_f[0::2]                            # 2048 f32
     Qx      = in_f[1::2]                            # 2048 f32
 
-    Ix_ext = np.pad(Ix, (0, L), mode='constant')    # 2056 f32
-    Qx_ext = np.pad(Qx, (0, L), mode='constant')    # 2056 f32
-
     M = 2048
     ref = np.zeros(2 * M, dtype=np.float32)
+    hist_i = np.zeros(L, dtype=np.float32)
+    hist_q = np.zeros(L, dtype=np.float32)
     for i in range(M):
+        hist_i[:-1] = hist_i[1:]
+        hist_q[:-1] = hist_q[1:]
+        hist_i[-1] = Ix[i]
+        hist_q[-1] = Qx[i]
         Iacc = 0.0
         Qacc = 0.0
         for k in range(L):
-            Iacc += Ix_ext[i + k] * Ih[k] - Qx_ext[i + k] * Qh[k]
-            Qacc += Ix_ext[i + k] * Qh[k] + Qx_ext[i + k] * Ih[k]
+            Iacc += hist_i[L - 1 - k] * Ih[k] - hist_q[L - 1 - k] * Qh[k]
+            Qacc += hist_i[L - 1 - k] * Qh[k] + hist_q[L - 1 - k] * Ih[k]
         ref[2*i]     = Iacc
         ref[2*i + 1] = Qacc
 
@@ -96,7 +103,10 @@ The reference performs the same operation the kernel does, in the same order, wi
 
 Every load from `in_bf16` is a bfloat16 value; every multiply and add is in `float32`; the final `bfloat16` truncation happens once per output element in `astype(bfloat16)` on the store. This mirrors the M5/M6 pattern exactly and is what "bit-accurate vs the reference" means for this milestone.
 
-Because M5's coefficients happen to be exactly representable in bfloat16 (each is a sum of at most two powers of two through the exponent of 0.05 ≈ 1.638×10⁻²), the `float(bfloat16(c))` cast is idempotent on our tap set — but we keep the cast to preserve the M5 contract shape for future tap sets that are not exact.
+The tap coefficients are quantized once to bfloat16 before use; decimal values
+such as 0.05, 0.10, 0.20, and 0.30 are not generally exactly representable.
+The explicit `float(bfloat16(c))` conversion is therefore part of the
+reference contract.
 
 ## 5. Kernel implementation (`fir_complex_kernel.cc`)
 
@@ -154,13 +164,13 @@ Bit-accuracy for M19 means: the NumPy reference in §4 and the AIE2 kernel produ
 
 The reference performs no reordering of the sum — the additions are done in the fixed order `k = 0, 1, …, 7`. The kernel's `#pragma clang loop unroll_count(8)` hint is a compile-time transformation on the *loop over i*, not on the sum over `k`; the inner sum order is fixed by the eight explicit `+= … * cIk` lines the kernel writes out. This is the same construction M5 relies on.
 
-## 8. What "silicon PASS" enables — and what it does not
+## 8. Historical milestone note
 
-A bit-exact PASS on Phoenix NPU1 closes the §16 M19 gap in [`docs/ROADMAP.md`](ROADMAP.md) — the "Complex-valued (complex taps × complex I/Q input) variant is the canonical M19 gap" line loses its footnote. Nothing else changes automatically. In particular:
-
-- The v0.4.0 tag and release are unchanged.
-- The published 16/16 regression contract in `run_all_silicon_tests.py` is unchanged. A M19 addition would take the runner to 17/17 and is deferred until an explicit approval after silicon PASS.
-- M20 polyphase and M21 DDC remain 🚧.
+The preceding planning language was written before the M19 entry was added to
+the protected runner. The dated v0.4.0 16/16 result remains historical; it is
+not the current repository-wide matrix count. Current validation boundaries are
+summarized in [`PQC_COMPLETE_V1.md`](PQC_COMPLETE_V1.md) and
+[`M33_SILICON_VALIDATION_20260817.md`](M33_SILICON_VALIDATION_20260817.md).
 
 ## 9. References
 
@@ -191,7 +201,9 @@ A bit-exact PASS on Phoenix NPU1 closes the §16 M19 gap in [`docs/ROADMAP.md`](
 
 ### 9.4 Project-internal references
 
-- Canonical milestone plan: `../Phoenix-SDR-DSP-Master-Prompt.md` §16 (M19), §13 (engineering rules), §20 (response format).
+- Repository-local milestone and validation policy:
+  [`docs/ROADMAP.md`](ROADMAP.md) and
+  [`MILESTONES_AND_MATHEMATICS.md`](MILESTONES_AND_MATHEMATICS.md).
 - Shipped M5 real FIR kernel: [`tests/m5_fir/fir_kernel.cc`](../tests/m5_fir/fir_kernel.cc).
 - Shipped M6 complex mixer kernel (complex multiply reference): [`tests/m6_mixer/mixer_kernel.cc`](../tests/m6_mixer/mixer_kernel.cc).
 - Shared DSP header (`cbfloat16_t`, vector lane constants): [`include/sdr_dsp/sdr_dsp_common.hpp`](../include/sdr_dsp/sdr_dsp_common.hpp).

@@ -18,6 +18,9 @@
 
 **Built on [Xilinx XRT](https://github.com/Xilinx/XRT), [Xilinx MLIR-AIE](https://github.com/Xilinx/mlir-aie) / [IRON](https://xilinx.github.io/mlir-aie/1.4.1/buildHostWinNative/), and [LLVM Peano](https://github.com/Xilinx/llvm-aie).**
 
+Third-party source and test-vector provenance is recorded in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
 **7.46 Msps of real I/Q on a 10 TOPS AMD laptop NPU.** 29.8 MB/s in · 59.7 MB/s in+out · ~92% NPU. No discrete GPU. No FPGA.
 
 The 34-entry regression matrix completed **34/34 PASS** on 2026-08-17 in 126.29 seconds. Its accurate backend accounting is **29 direct-hardware entries**, four host/NPU composer entries (M32e, M33d, M33e Sign, and M33e Verify), and one intentional CPU reference entry (M12). M33a and M33b are native, fail-closed silicon gates; the higher-level composers dispatch those primitives from Python and are not fully device-resident. See the [`M33 validation record`](docs/M33_SILICON_VALIDATION_20260817.md), [`v1.0.0 validation errata`](docs/V1_0_0_VALIDATION_ERRATA.md), and [`PQC status summary`](docs/PQC_COMPLETE_V1.md). New-user path: `git clone` → `py .\install.py` → `py .\run_all_silicon_tests.py`.
@@ -76,7 +79,8 @@ The **Phoenix SDR-DSP** project provides a native Windows 11 execution and valid
 
 - **Target APU:** AMD Ryzen 9 7940HS (8 Cores / 16 Threads @ 4.0–5.2 GHz)
 - **NPU Silicon:** AMD XDNA1 / 1st Gen Ryzen AI (`npu1`), [up to 10 TOPS](https://www.amd.com/en/products/processors/laptop/ryzen/7000-series/amd-ryzen-9-7940hs.html) ([INT8 on Phoenix 7040](https://www.tomshardware.com/pc-components/cpus/the-refresh-that-wasnt-amd-announces-hawk-point-ryzen-8040-series-with-zen-4-rdna3-and-xdna-teases-strix-point))
-  - **Tile Array:** 4 Columns $\times$ 5 Rows of AI Engine 2 (AIE2) tiles
+  - **Tile Array:** 20-tile 4×5 AI Engine 2 (AIE2) array; row/column
+    orientation follows the platform documentation and is not inferred here
   - **Vector Architecture:** 512-bit SIMD registers supporting 64-lane `bfloat16`, 32-lane `int16`, and 16-lane `cint16`
   - **Local Memory:** 64 KB local data memory per tile (four 16 KB banks)
 - **Host Operating System:** Windows 11 Pro 25H2
@@ -168,7 +172,7 @@ Hardware-backed rows below execute on physical Phoenix NPU silicon (`npu1`) and 
 | **M32b** | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM NTT | Tile `(0,2)` | Algorithms 9–12, `Z_3329`, pq-crystals ζ-table | **PASS** | Bit-Exact vs [`kyber-py` 1.0.1](https://github.com/GiacomoPope/kyber-py) |
 | **M32c** | Post-Quantum Cryptography — [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf) Keccak / SHA-3 / SHAKE + samplers | Tile `(0,2)` | Keccak-f[1600] permutation, 5 dispatch modes | **PASS** | Bit-Exact vs [FIPS 202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf) test vectors |
 | **M32d** | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) K-PKE Component | Tile `(0,2)` | Algorithms 13–15 (K-PKE.KeyGen / Encrypt / Decrypt) | **PASS** | Bit-Exact vs kyber-py K-PKE |
-| **M32e** | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM.{KeyGen, Encaps, Decaps} composer | Host + tile | Algorithms 19–21, ML-KEM-512 | **HARDWARE SMOKE PASS** | 60 host KATs plus 3 silicon vectors per operation |
+| **M32e** | Post-Quantum Cryptography — [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM internal-interface composer | Host + tile | Algorithms 16–18, ML-KEM-512 | **HARDWARE SMOKE PASS** | 60 host KATs plus 3 silicon vectors per operation |
 | **M33a** | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA NTT | Tile `(0,2)` | NTT / INTT / basemul / reduce, `Z_8380417` | **SILICON PASS** | 420 / 420; `m33a:silicon` |
 | **M33b** | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) Rounding & Hint | Tile `(0,2)` | Power2Round / Decompose / MakeHint / UseHint / CheckNorm | **SILICON PASS** | 700 / 700; `m33b:silicon` |
 | **M33d** | Post-Quantum Cryptography — [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA.KeyGen composer | Host + tile | Algorithm 6, ML-DSA-{44, 65, 87} | **HYBRID PASS** | 75 / 75; native M33a/M33b primitives |
@@ -178,10 +182,10 @@ Hardware-backed rows below execute on physical Phoenix NPU silicon (`npu1`) and 
 
 The v1.0.0 tree contains FIPS-aligned ML-KEM and ML-DSA experiments with different validation boundaries:
 
-- **[FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM** — M32b, M32c, and M32d dispatch directly to the NPU. M32e exercises ML-KEM-512 composition with 60 host KATs and a nine-vector silicon smoke gate. Reference oracle: [`kyber-py` 1.0.1](https://github.com/GiacomoPope/kyber-py).
+- **[FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM** — M32b, M32c, and M32d dispatch directly to the NPU. M32e exercises the ML-KEM-512 internal deterministic interfaces (Algorithms 16–18) in a host/NPU composition with 60 host KATs and a nine-vector silicon smoke gate; it does not establish public Algorithms 19–21 coverage. Reference oracle: [`kyber-py` 1.0.1](https://github.com/GiacomoPope/kyber-py).
 - **[FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA** — M33a and M33b are native, fail-closed silicon gates. M33d/e are host-orchestrated composers that dispatch those polynomial primitives to the NPU while SHAKE, sampling, packing, accumulation, and control remain host-side. The recorded gates are M33a 420/420, M33b 700/700, M33d 75/75, M33e Sign 90/90, and M33e Verify 90/90. Reference oracle: [`dilithium-py` 1.4.0](https://github.com/GiacomoPope/dilithium-py).
 
-Full v1.0.0 release summary: [`docs/PQC_COMPLETE_V1.md`](docs/PQC_COMPLETE_V1.md). Per-milestone design notes live at [`docs/M32b_DESIGN.md`](docs/M32b_DESIGN.md), [`docs/M32c_DESIGN.md`](docs/M32c_DESIGN.md), [`docs/M32d_DESIGN.md`](docs/M32d_DESIGN.md), [`docs/M32e_DESIGN.md`](docs/M32e_DESIGN.md), [`docs/M33a_DESIGN.md`](docs/M33a_DESIGN.md), [`docs/M33b_DESIGN.md`](docs/M33b_DESIGN.md), [`docs/M33d_DESIGN.md`](docs/M33d_DESIGN.md), [`docs/M33e_DESIGN.md`](docs/M33e_DESIGN.md). PQC reference packages (`kyber-py`, `dilithium-py`, and `pytest`) are pinned in [`requirements/toolchain-versions.md`](requirements/toolchain-versions.md) and auto-installed into `ironenv` by `install.py`; the manual pip step in [`docs/SETUP_WINDOWS.md`](docs/SETUP_WINDOWS.md#post-quantum-cryptography-reference-dependencies-m32--m33) is only needed if you bootstrapped ironenv another way. All SHAKE / SHA-3 primitives come from the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required.
+Full v1.0.0 release summary: [`docs/PQC_COMPLETE_V1.md`](docs/PQC_COMPLETE_V1.md). Per-milestone design notes live at [`docs/M32b_DESIGN.md`](docs/M32b_DESIGN.md), [`docs/M32c_DESIGN.md`](docs/M32c_DESIGN.md), [`docs/M32d_DESIGN.md`](docs/M32d_DESIGN.md), [`docs/M32e_DESIGN.md`](docs/M32e_DESIGN.md), [`docs/M33a_DESIGN.md`](docs/M33a_DESIGN.md), [`docs/M33b_DESIGN.md`](docs/M33b_DESIGN.md), [`docs/M33d_DESIGN.md`](docs/M33d_DESIGN.md), [`docs/M33e_DESIGN.md`](docs/M33e_DESIGN.md). `kyber-py` and `dilithium-py` are version-pinned; `pytest` is required but not yet locked, so the installation is not fully dependency-reproducible. All SHAKE / SHA-3 primitives come from the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required.
 
 <a id="iq-throughput"></a>
 

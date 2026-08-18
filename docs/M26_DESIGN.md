@@ -1,5 +1,10 @@
 # M26 — QAM-16 Receiver Pipeline (Decision-Directed Carrier + Soft LLR Demapper, Silicon)
 
+> **Documentation caution.** This is a design/bring-up record, not a normative
+> soft-demapping specification. Its LLR sign, Gray-label, and normalization
+> notation requires a source/test-owner reconciliation before publication or
+> decoder integration. Do not infer a production bit convention from this file.
+
 Companion to [`docs/M25_DESIGN.md`](M25_DESIGN.md). Extends the fused M25 receiver core (Gardner TED + NCO derotate + PI loops) with a QAM-16 hard-decision slicer, a decision-directed order-M phase detector, and a max-log soft-output demapper emitting four LLRs per QAM-16 symbol.
 
 ## 1. Scope and ROADMAP mapping

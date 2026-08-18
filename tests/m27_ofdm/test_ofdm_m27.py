@@ -198,7 +198,7 @@ def _qam16_slice_unit_energy(z):
 # ------------------------------------------------------------------
 # Host reference: bit-accurate transliteration of ofdm_loopback_kernel.cc.
 # Uses the SAME numpy.fft.fft as the reference FFT (M17 is bit-exact to
-# numpy.fft.fft up to bf16 quantization; see M17_DESIGN.md).
+# numpy.fft.fft up to bf16 quantization; see M17_V3_DESIGN.md).
 
 def _pilot_bracket(kc):
     """Return (pa, pb) into PILOT_KC that brackets data subcarrier kc.

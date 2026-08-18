@@ -1,5 +1,6 @@
 # Purpose: Milestone 21 Digital Down-Converter (DDC) Silicon Validation on
-#          AMD Phoenix NPU (fused NCO(f_c=-f_s/8) + 16-tap Kaiser LPF +
+#          AMD Phoenix NPU (fused negative-exponent NCO at f_LO=+f_s/8 +
+#          16-tap Kaiser LPF +
 #          decim-by-M=4 on one AIE2 core).
 # Target operating system: Windows 11 Pro 25H2.
 # Target architecture: AMD Phoenix NPU1 / XDNA1 / AIE2.
@@ -23,7 +24,7 @@
 #     (I_x + j Q_x) * (cos_lo + j sin_lo) =
 #         (I_x*cos_lo - Q_x*sin_lo) + j*(I_x*sin_lo + Q_x*cos_lo)
 #
-# LO LUT rationale: at f_c = -f_s/8 the LO repeats every 8 samples, so we
+# LO LUT rationale: the e^(-j 2 pi n / 8) LO repeats every 8 samples, so we
 # store 8 (cos, sin) pairs and index by (n & 7) instead of running a runtime
 # CORDIC. This is the standard cordic-free DDS trick from
 #   Analog Devices MT-085 "Fundamentals of Direct Digital Synthesis (DDS)"
@@ -72,7 +73,7 @@ COEFFS_H_F = [
     -0.009216, -0.009644, -0.003281, -0.000242,
 ]
 
-# 8-entry LO LUT for f_c = -f_s/8 (downconvert positive f_s/8 to DC).
+# 8-entry LO LUT for e^(-j 2 pi n / 8) (downconvert positive f_s/8 to DC).
 # Values are cos / sin of -2 pi k / 8 for k = 0..7. Bfloat16-quantized
 # equivalents of the closed-form values {+/-1, +/-sqrt(2)/2, 0}.
 LO_COS_F = [
@@ -281,7 +282,7 @@ def _local_impulse_check():
 def _local_on_carrier_check():
     """Test 3: on-carrier tone at f = +f_s/8.
 
-    After mixing by LO (f_c = -f_s/8) the tone lands at DC, the LPF
+    After mixing by the negative-exponent LO the tone lands at DC, the LPF
     passband is flat, so the deep-tail complex output should have
     magnitude ~ 1.0 and phase ~ 0.
     """
@@ -312,7 +313,7 @@ def _local_on_carrier_check():
 def _local_image_rejection_check():
     """Test 4: image tone at f = -f_s/8.
 
-    After mixing by LO (f_c = -f_s/8) the image lands at f = -f_s/4,
+    After mixing by the negative-exponent LO the image lands at f = -f_s/4,
     which is in the 16-tap Kaiser prototype's stopband. Expect deep
     attenuation on the deep-tail output.
     """
@@ -355,7 +356,10 @@ def main():
         f"Vector Length: {data_size} elements "
         f"({data_size // 2} complex I/Q pairs) of {element_type.__name__}"
     )
-    print(f"DDC: f_c = -f_s/8 (8-sample LO LUT), 16-tap Kaiser LPF, M = {M} decim")
+    print(
+        f"DDC: f_LO = +f_s/8 with e^(-j 2 pi n / 8) (8-sample LO LUT), "
+        f"16-tap Kaiser LPF, M = {M} decim"
+    )
 
     # Reference-only pre-checks (LO regen, impulse, on-carrier, image rejection)
     _run_local_reference_checks()

@@ -1,6 +1,7 @@
 # M22 — Digital Up-Converter (DUC) Design
 
-Status: in review (pre-silicon).
+Status: **historical design note; implementation shipped.** Retained
+pre-silicon planning text below is not the current validation status.
 Owner: Phoenix SDR-DSP team.
 Target hardware: AMD Ryzen 9 7940HS Phoenix / XDNA1 / AIE2 (one core).
 Target OS: Windows 11 Pro 25H2, Clang / Peano AIE2, IRON 1.4.1.
@@ -12,7 +13,7 @@ Related files:
 
 ## 1. Purpose
 
-A Digital Up-Converter (DUC) is the mathematical inverse of a DDC. It
+A Digital Up-Converter (DUC) is a complementary signal chain to a DDC. It
 takes a narrowband complex baseband signal, raises its sample rate,
 and shifts it up to an intermediate frequency where a DAC can play
 it out. In one sentence:
@@ -65,9 +66,9 @@ convention from
 [`scipy.signal.resample_poly`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample_poly.html)).
 End-to-end DC gain therefore comes out to exactly 1:
 
-\[
+$$
 \text{gain}_{\text{DC}} = \frac{\sum h_i}{L} = \frac{L \cdot \sum h}{L} = \sum h \approx 1
-\]
+$$
 
 This is the same `hi[16]` array M20 stage-2 already ships in
 [`tests/m20_polyphase/polyphase_kernel.cc`](../tests/m20_polyphase/polyphase_kernel.cc);

@@ -1,5 +1,8 @@
 # Citation audit — 2026-08-15
 
+> **Historical audit record.** This document records a pre-current-main audit
+> state and is retained as evidence only; it is not a current source of truth.
+
 Whole-repo pass after the 16/16 silicon result. Goal: every technical claim
 that could appear in a paper has a primary-source URL. Lab measurements
 (17.46 s, SNRs, I/Q rates, seed-42 vectors) stay first-party — they are not

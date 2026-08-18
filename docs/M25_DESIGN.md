@@ -1,6 +1,8 @@
 # M25 — BPSK/QPSK Receiver Pipeline (Gardner TED + Costas Loop, Silicon)
 
-Status: DESIGN. Feature-parity target: bit-exact vs a portable Python reference derived directly from GNU Radio's `control_loop::advance_loop` and Gardner's 1986 error detector.
+Status: **historical design note; implementation shipped.** The text below
+preserves the original design target. Current acceptance uses the recorded
+residual-metric boundary, not a blanket bit-exact receiver claim.
 
 ## 1. Scope and ROADMAP mapping
 
