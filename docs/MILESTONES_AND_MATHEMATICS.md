@@ -567,7 +567,7 @@ The fused-kernel choice (one Worker, one xclbin, no chained `ObjectFifo`) follow
 M21 shifts a real-world radio signal that sits at an intermediate frequency down to complex baseband and then reduces the sample rate, all inside one fused AIE2 kernel:
 
 $$
-y[m] \;=\; \text{decim}_{M} \left\{ h \ast \left(x[n] \cdot e^{-j 2\pi f_c n / f_s}\right) \right\}
+y[m] \;=\; \mathrm{decim}_{M}\left(h \ast \left(x[n] \cdot e^{-j 2\pi f_c n / f_s}\right)\right)
 $$
 
 The kernel does the mix, filter, and decimation together on one core with no intermediate `ObjectFifo`, following the M8 fused-pipeline pattern. The signal-chain topology is the canonical DDC of [Harris 2004 ch. 8](https://ieeexplore.ieee.org/book/9448967) and mirrors GNU Radio's [Frequency Xlating FIR Filter](https://wiki.gnuradio.org/index.php/Frequency_Xlating_FIR_Filter) block, which likewise fuses complex NCO + real-tap FIR + integer decimation.

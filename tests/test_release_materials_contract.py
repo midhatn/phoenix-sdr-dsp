@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unittest
 from pathlib import Path
@@ -32,8 +33,6 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         self.assertIn(EXPECTED_RUNNER_SHA256, source)
 
     def test_canonical_runner_identity_is_unchanged(self) -> None:
-        import hashlib
-
         self.assertEqual(
             hashlib.sha256(RUNNER.read_bytes()).hexdigest(),
             EXPECTED_RUNNER_SHA256,
@@ -58,6 +57,10 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         citation = (REPO / "CITATION.cff").read_text(encoding="utf-8")
         toolchain = (REPO / "toolchain.yaml").read_text(encoding="utf-8")
         third_party = (REPO / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        provenance = (REPO / "THIRD_PARTY_PROVENANCE.md").read_text(encoding="utf-8")
+        nist_notice = (REPO / "LICENSES" / "NIST-ACVP-NOTICE.txt").read_text(
+            encoding="utf-8"
+        )
         history = (REPO / "LICENSE_HISTORY.md").read_text(encoding="utf-8")
         contributing = (REPO / "CONTRIBUTING.md").read_text(encoding="utf-8")
         mit_text = (REPO / "LICENSES" / "MIT.txt").read_text(encoding="utf-8")
@@ -71,12 +74,45 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         self.assertIn("license: Apache-2.0", citation)
         self.assertIn("license: Apache-2.0", toolchain)
         self.assertIn("LICENSES/MIT.txt", third_party)
+        self.assertIn("THIRD_PARTY_PROVENANCE.md", third_party)
+        self.assertIn(
+            "975de31eb83d87039ec88934fdc47d8c312b892d",
+            provenance,
+        )
+        self.assertIn("Comparison anchor only", provenance)
+        self.assertIn(
+            "f037dc6f0c45452a28a3ad8059a299ccc1ab94461c822b67bbe85fccdf8e5cbc",
+            provenance,
+        )
+        self.assertIn("acknowledges the National Institute of Standards", provenance)
+        self.assertIn(
+            "National Institute of Standards and Technology",
+            " ".join(nist_notice.split()),
+        )
+        self.assertIn("keep intact this entire notice", nist_notice)
         self.assertIn("Permissions already granted", history)
         self.assertIn("submitted under the repository's", contributing)
         self.assertIn("Apache License 2.0", contributing)
         self.assertIn("immutable upstream URL and revision", contributing)
         self.assertTrue(mit_text.startswith("MIT License"))
         self.assertTrue(kpke.startswith("// SPDX-License-Identifier: MIT"))
+
+    def test_provenance_manifest_matches_local_files(self) -> None:
+        provenance = (REPO / "THIRD_PARTY_PROVENANCE.md").read_text(encoding="utf-8")
+        rows = re.findall(
+            r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|",
+            provenance,
+            flags=re.MULTILINE,
+        )
+        self.assertGreaterEqual(len(rows), 29)
+        for relative_path, expected_sha256 in rows:
+            with self.subTest(path=relative_path):
+                path = REPO / relative_path
+                self.assertTrue(path.is_file())
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(),
+                    expected_sha256,
+                )
 
     def test_publication_documents_link_to_release_controls(self) -> None:
         readiness = (REPO / "docs" / "PUBLICATION_READINESS.md").read_text(

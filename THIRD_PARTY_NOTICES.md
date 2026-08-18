@@ -10,21 +10,19 @@ to those notices.
 | Path | Origin and provenance | License / notice |
 |---|---|---|
 | `kernels/fft_stockham_f32.cc` | Adapted from AMD-authored [`diacccc/FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE), as identified in the file header and [`CITATION.cff`](CITATION.cff). | Apache License 2.0 with LLVM Exceptions; retain the file-level copyright, SPDX identifier, and attribution. The Apache 2.0 text is included in [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt). |
-| `tests/m3_saxpy/saxpy.cc` | Carries an Advanced Micro Devices, Inc. copyright notice. The exact immutable upstream source revision is not yet recorded. | `Apache-2.0 WITH LLVM-exception`; retain the file-level copyright and SPDX identifier. |
-| `tests/m17_radix2_fft/twiddles_r4_stockham.py` | Derives its packed-twiddle layout from [`diacccc/FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE), as stated in the file header. The exact immutable upstream source revision is not yet recorded. | `Apache-2.0 WITH LLVM-exception`; retain the file-level license and attribution. |
+| `tests/m3_saxpy/saxpy.cc` | Exact copy of the AMD/Xilinx MLIR-AIE source pinned in [`THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md). | `Apache-2.0 WITH LLVM-exception`; retain the file-level copyright and SPDX identifier. |
+| `tests/m17_radix2_fft/twiddles_r4_stockham.py` | Derives its packed-twiddle layout from [`diacccc/FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE), with an immutable comparison anchor and local hash recorded in [`THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md). | `Apache-2.0 WITH LLVM-exception`; retain the file-level license and attribution. |
 | `tests/m17_radix2_fft/fft64_r4_wrapper.cc` | Original thin wrapper that textually includes the separately listed `kernels/fft_stockham_f32.cc` derivative. | `Apache-2.0 WITH LLVM-exception`; redistribution must also retain the included kernel's AMD attribution and notice. |
-| `tests/m32_mlkem/kpke_kernel.cc` | Declares a line-for-line pq-crystals Kyber reference transliteration in its file header. | MIT; retain the file-level SPDX identifier. The previously applicable project MIT text is preserved at [`LICENSES/MIT.txt`](LICENSES/MIT.txt). Upstream revision and notice verification remains required before a formal redistribution claim. |
+| `tests/m32_mlkem/kpke_kernel.cc` | Declares a line-for-line pq-crystals Kyber reference transliteration in its file header. The local hash, upstream comparison anchor, and exactness limitation are recorded in [`THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md). | MIT; retain the file-level SPDX identifier. The previously applicable project MIT text is preserved at [`LICENSES/MIT.txt`](LICENSES/MIT.txt). |
 
 ## Test-vector provenance
 
 The ML-KEM and ML-DSA JSON vectors under `tests/m32_mlkem/vectors/` and
 `tests/m33_mldsa/vectors/` are retained test data from the
 [NIST ACVP-Server Gen/Vals repository](https://github.com/usnistgov/ACVP-Server).
-Their exact upstream commit/tree hash and distribution manifest are not yet
-recorded in this repository. Do not infer an OSI license from this provenance
-note; release work must record the upstream revision, vector hashes, and
-applicable notice before representing the data as a reproducible release
-artifact.
+Their exact upstream commit, upstream and local SHA-256 values, extraction
+status, NIST notice, and modification statement are recorded in
+[`THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md).
 
 ## Dependencies not redistributed
 

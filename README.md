@@ -389,4 +389,6 @@ Expected on Phoenix NPU1: first-buffer $L_\infty = 0.007812$, then ~7.5 Msps / ~
   exceptions and third-party notices remain authoritative; see
   [LICENSE](LICENSE), [LICENSE_HISTORY.md](LICENSE_HISTORY.md),
   [NOTICE](NOTICE), and
-  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Immutable upstream
+  anchors and local SHA-256 identities are recorded in
+  [THIRD_PARTY_PROVENANCE.md](THIRD_PARTY_PROVENANCE.md).
