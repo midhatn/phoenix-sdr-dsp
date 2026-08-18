@@ -34,3 +34,14 @@ Read [M0–M33 Milestones and Mathematics](MILESTONES_AND_MATHEMATICS.md) for th
 ## Validation boundary
 
 The documentation distinguishes direct physical-NPU validation, host/NPU composition, and host/reference work. The runner contains **34 invocations**: 29 direct-hardware entries, four host/NPU composer entries, and one intentional CPU reference entry (M12). The corrected matrix completed **34/34 PASS** on 2026-08-17, but this mixed-backend result is not a claim that all 34 workloads are fully device-resident. `kyber-py`, `dilithium-py`, and `pytest` are version-pinned; the full transitive dependency closure remains unhashed, so the bootstrap is not yet fully dependency-reproducible. SHAKE / SHA-3 host operations use CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html). See [`M33_SILICON_VALIDATION_20260817.md`](M33_SILICON_VALIDATION_20260817.md).
+
+## Release and publication materials
+
+- [Publication readiness](PUBLICATION_READINESS.md) — claim/evidence matrix,
+  current validation boundaries, retention, blockers, and release policy.
+- [Journal reproducibility checklist](JOURNAL_REPRODUCIBILITY_CHECKLIST.md) —
+  manuscript-ready source, environment, evidence, statistical, and citation
+  checklist.
+- [`../scripts/validate_clean_clone.ps1`](../scripts/validate_clean_clone.ps1)
+  — normal-user PowerShell 7 clean-clone audit. Its default path is host-safe;
+  `-RunSilicon` is a separate, explicit NPU-dispatch action.

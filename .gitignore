@@ -63,3 +63,6 @@ _scratch_*/
 # reproduce 33/33 silicon PASS. See docs/PQC_COMPLETE_V1.md.
 !tests/m32_mlkem/vectors/*.json
 !tests/m33_mldsa/vectors/*.json
+
+# Timestamped reports written by scripts/validate_clean_clone.ps1.
+release-evidence/

@@ -156,11 +156,12 @@ jobs:
         run: |
           python include/sdr_dsp/verify_m4_headers.py
 
-      - name: Run M33 and protected-runner host contracts
+      - name: Run M33, protected-runner, and release-material host contracts
         run: |
           python -m unittest -v \
             tests/test_m33_native_runner_contract.py \
-            tests/test_regression_validation.py
+            tests/test_regression_validation.py \
+            tests/test_release_materials_contract.py
 
       - name: Run installer self-test
         run: |

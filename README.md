@@ -25,7 +25,7 @@ Third-party source and test-vector provenance is recorded in
 
 The 34-entry regression matrix completed **34/34 PASS** on 2026-08-17 in 126.29 seconds. Its accurate backend accounting is **29 direct-hardware entries**, four host/NPU composer entries (M32e, M33d, M33e Sign, and M33e Verify), and one intentional CPU reference entry (M12). M33a and M33b are native, fail-closed silicon gates; the higher-level composers dispatch those primitives from Python and are not fully device-resident. See the [`M33 validation record`](docs/M33_SILICON_VALIDATION_20260817.md), [`v1.0.0 validation errata`](docs/V1_0_0_VALIDATION_ERRATA.md), and [`PQC status summary`](docs/PQC_COMPLETE_V1.md). New-user path: `git clone` → `py .\install.py` → `py .\run_all_silicon_tests.py`.
 
-[Install](#installation) • [Architecture](#1-system--hardware-architecture) • [Directory Structure](#2-repository-structure) • [Validation Matrix](#3-validation-matrix) • [I/Q Throughput](#iq-throughput) • [Engineering Issues & Fixes](#4-engineering-challenges--technical-solutions) • [Quickstart](#5-quickstart--silicon-verification) • [References](#6-references--upstream-projects) • [Credits](#7-credits--acknowledgments)  • [Documentation](docs/README.md)
+[Install](#installation) • [Architecture](#1-system--hardware-architecture) • [Directory Structure](#2-repository-structure) • [Validation Matrix](#3-validation-matrix) • [I/Q Throughput](#iq-throughput) • [Engineering Issues & Fixes](#4-engineering-challenges--technical-solutions) • [Quickstart](#5-quickstart--silicon-verification) • [References](#6-references--upstream-projects) • [Credits](#7-credits--acknowledgments)  • [Documentation](docs/README.md) • [Publication readiness](docs/PUBLICATION_READINESS.md)
 
 </div>
 
@@ -140,6 +140,22 @@ phoenix-sdr-dsp/
 ## 3. Validation Matrix
 
 Hardware-backed rows below execute on physical Phoenix NPU silicon (`npu1`) and compare against an independent mathematical reference. CPU and reference-only rows are labeled explicitly.
+
+### Release-maintenance validation
+
+For a clean-drive, host-safe audit that never accesses the NPU, run PowerShell
+7 as a normal user:
+
+```powershell
+pwsh -File .\scripts\validate_clean_clone.ps1
+```
+
+It writes one timestamped report beneath ignored `release-evidence/`. The
+separate `-RunSilicon` switch runs the unchanged canonical runner only after
+the host checks pass and must be used only on an approved Phoenix test host.
+Publication scope, evidence limits, and retention requirements are in
+[Publication readiness](docs/PUBLICATION_READINESS.md) and the
+[journal reproducibility checklist](docs/JOURNAL_REPRODUCIBILITY_CHECKLIST.md).
 
 | Milestone | Component / DSP Primitive | Target Array | Workload / Dimensions | Silicon Status | Verification Result |
 | :--- | :--- | :--- | :--- | :--- | :--- |
