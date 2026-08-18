@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ![Target: AMD Phoenix NPU1](https://img.shields.io/badge/Target-AMD%20Ryzen%20AI%20NPU1%20(AIE2)-blue)
 ![Host: Windows 11 Pro](https://img.shields.io/badge/Host-Windows%2011%20Pro%2025H2-0078D6)
 ![Validation: 34/34 mixed-backend PASS](https://img.shields.io/badge/Validation-34%2F34%20mixed--backend%20PASS-brightgreen)
@@ -158,7 +158,7 @@ phoenix-sdr-dsp/
 ├── install.py                       # Internal implementation used by install
 ├── run_all_silicon_tests.py         # Automated Master Regression Suite
 ├── CITATION.cff                     # Citation metadata (validated with cffconvert)
-├── LICENSE                          # MIT License
+├── LICENSE                          # Apache License 2.0
 ├── CONTRIBUTING.md                  # Contribution Guidelines
 └── README.md                        # Master Project Documentation
 ```
@@ -385,4 +385,8 @@ Expected on Phoenix NPU1: first-buffer $L_\infty = 0.007812$, then ~7.5 Msps / ~
 - **Upstream toolchain (Advanced Micro Devices, Inc. — formerly Xilinx):** [`mlir-aie`](https://github.com/Xilinx/mlir-aie), [`llvm-aie` (Peano)](https://github.com/Xilinx/llvm-aie), [`XRT`](https://github.com/Xilinx/XRT), [`xdna-driver`](https://github.com/amd/xdna-driver), and the [`FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE) radix-4 Stockham FFT reference (Apache-2.0), which `kernels/fft_stockham_f32.cc` is adapted from.
 - **Academic foundations:** J. W. Cooley & J. W. Tukey (1965) for the radix-2 FFT that seeds M16/M17; P. Barrett (1986) for the modular-reduction method underlying M10–M15b.
 - **Community reference:** [`hal-lab-u-tokyo/ntt-aie`](https://github.com/hal-lab-u-tokyo/ntt-aie) NTT-on-AIE reference implementation.
-- **License:** MIT License — See [LICENSE](LICENSE) for details.
+- **License:** Apache License 2.0 for original project work. File-level
+  exceptions and third-party notices remain authoritative; see
+  [LICENSE](LICENSE), [LICENSE_HISTORY.md](LICENSE_HISTORY.md),
+  [NOTICE](NOTICE), and
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -11,7 +11,7 @@ authors:
     alias: "midhatn"
 repository-code: "https://github.com/midhatn/phoenix-sdr-dsp"
 url: "https://github.com/midhatn/phoenix-sdr-dsp"
-license: MIT
+license: Apache-2.0
 keywords:
   - "amd-ryzen-ai"
   - "npu"

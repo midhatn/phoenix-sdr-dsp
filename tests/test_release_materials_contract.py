@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -51,6 +52,32 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
                 text = path.read_text(encoding="utf-8-sig")
                 self.assertIn(r".\scripts\activate_ironenv.ps1", text)
 
+    def test_project_license_metadata_and_file_exception_are_consistent(self) -> None:
+        license_text = (REPO / "LICENSE").read_text(encoding="utf-8")
+        notice = (REPO / "NOTICE").read_text(encoding="utf-8")
+        citation = (REPO / "CITATION.cff").read_text(encoding="utf-8")
+        toolchain = (REPO / "toolchain.yaml").read_text(encoding="utf-8")
+        third_party = (REPO / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        history = (REPO / "LICENSE_HISTORY.md").read_text(encoding="utf-8")
+        contributing = (REPO / "CONTRIBUTING.md").read_text(encoding="utf-8")
+        mit_text = (REPO / "LICENSES" / "MIT.txt").read_text(encoding="utf-8")
+        kpke = (REPO / "tests" / "m32_mlkem" / "kpke_kernel.cc").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Apache License", license_text)
+        self.assertIn("Version 2.0", license_text)
+        self.assertIn("Copyright 2026 Midhat Nashar", notice)
+        self.assertIn("license: Apache-2.0", citation)
+        self.assertIn("license: Apache-2.0", toolchain)
+        self.assertIn("LICENSES/MIT.txt", third_party)
+        self.assertIn("Permissions already granted", history)
+        self.assertIn("submitted under the repository's", contributing)
+        self.assertIn("Apache License 2.0", contributing)
+        self.assertIn("immutable upstream URL and revision", contributing)
+        self.assertTrue(mit_text.startswith("MIT License"))
+        self.assertTrue(kpke.startswith("// SPDX-License-Identifier: MIT"))
+
     def test_publication_documents_link_to_release_controls(self) -> None:
         readiness = (REPO / "docs" / "PUBLICATION_READINESS.md").read_text(
             encoding="utf-8"
@@ -67,12 +94,20 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
 
     def test_maintained_markdown_uses_supported_math_notation(self) -> None:
         offending = []
+        malformed_delimiters = []
         for path in REPO.rglob("*.md"):
             if any(root in path.parents for root in ARCHIVED_MARKDOWN_ROOTS):
                 continue
-            if "\\operatorname" in path.read_text(encoding="utf-8"):
+            text = path.read_text(encoding="utf-8")
+            if "\\operatorname" in text:
                 offending.append(path.relative_to(REPO).as_posix())
+            for line_number, line in enumerate(text.splitlines(), start=1):
+                if re.search(r"\\(?:Bigg|bigg|Big|big)(?![lrm])", line):
+                    malformed_delimiters.append(
+                        f"{path.relative_to(REPO).as_posix()}:{line_number}"
+                    )
         self.assertEqual(offending, [])
+        self.assertEqual(malformed_delimiters, [])
 
     def test_current_setup_materials_prefer_the_extensionless_launcher(self) -> None:
         current_guidance = [

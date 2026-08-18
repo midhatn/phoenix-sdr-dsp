@@ -567,7 +567,7 @@ The fused-kernel choice (one Worker, one xclbin, no chained `ObjectFifo`) follow
 M21 shifts a real-world radio signal that sits at an intermediate frequency down to complex baseband and then reduces the sample rate, all inside one fused AIE2 kernel:
 
 $$
-y[m] \;=\; \text{decim}_{M} \big\{ h * \big(x[n] \cdot e^{-j 2\pi f_c n / f_s}\big) \big\}
+y[m] \;=\; \text{decim}_{M} \left\{ h \ast \left(x[n] \cdot e^{-j 2\pi f_c n / f_s}\right) \right\}
 $$
 
 The kernel does the mix, filter, and decimation together on one core with no intermediate `ObjectFifo`, following the M8 fused-pipeline pattern. The signal-chain topology is the canonical DDC of [Harris 2004 ch. 8](https://ieeexplore.ieee.org/book/9448967) and mirrors GNU Radio's [Frequency Xlating FIR Filter](https://wiki.gnuradio.org/index.php/Frequency_Xlating_FIR_Filter) block, which likewise fuses complex NCO + real-tap FIR + integer decimation.
@@ -595,7 +595,7 @@ See [docs/M21_DESIGN.md](M21_DESIGN.md).
 M22 is a complementary DUC signal chain to M21. It takes a narrowband complex baseband signal, raises the sample rate by `L = 4`, and shifts it up to an intermediate frequency — all inside one fused AIE2 kernel:
 
 $$
-y[n] \;=\; \big(h \ast \text{upsample}_{L}\{x_{bb}[m]\}\big) \cdot e^{+j 2\pi f_c n / f_s}
+y[n] \;=\; \left(h \ast \text{upsample}_{L}\left\{x_{bb}[m]\right\}\right) \cdot e^{+j 2\pi f_c n / f_s}
 $$
 
 The zero-stuff-and-filter interpolation is evaluated in polyphase form so the kernel never materialises the zero-stuffed intermediate stream. Each baseband input feeds a 4-slot shift register, and the 16-tap prototype is decomposed into `L = 4` branches of 4 taps each, one per output phase. This is the commutator identity of [Vaidyanathan 1993 §4.3, Eq. 4.3.13](https://dl.acm.org/doi/10.5555/151045) and [Harris 2004 ch. 7](https://ieeexplore.ieee.org/book/9448967), and matches the [GNU Radio Frequency Xlating FIR Filter](https://wiki.gnuradio.org/index.php/Frequency_Xlating_FIR_Filter) block run with negative decimation (interp). The DUC signal-chain topology is [Harris 2004 §8.4 "The Digital Up-Converter"](https://ieeexplore.ieee.org/book/9448967).

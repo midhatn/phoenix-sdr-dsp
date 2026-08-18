@@ -13,7 +13,7 @@ schema_version: "1.0"
 project:
   name: phoenix-sdr-dsp
   repository: "https://github.com/midhatn/phoenix-sdr-dsp"
-  license: MIT
+  license: Apache-2.0
 
 # --- Target silicon --------------------------------------------------------
 target:

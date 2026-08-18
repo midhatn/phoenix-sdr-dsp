@@ -1,14 +1,19 @@
 # Third-party notices and provenance
 
-This file inventories third-party material distributed in this repository. It
-does not change the repository-wide MIT license for original Phoenix SDR-DSP
-work; files carrying their own notices remain subject to those notices.
+This file inventories third-party material distributed in this repository.
+The root Apache License 2.0 applies to original Phoenix SDR-DSP work that does
+not declare another license. Files carrying their own notices remain subject
+to those notices.
 
 ## Distributed source
 
 | Path | Origin and provenance | License / notice |
 |---|---|---|
 | `kernels/fft_stockham_f32.cc` | Adapted from AMD-authored [`diacccc/FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE), as identified in the file header and [`CITATION.cff`](CITATION.cff). | Apache License 2.0 with LLVM Exceptions; retain the file-level copyright, SPDX identifier, and attribution. The Apache 2.0 text is included in [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt). |
+| `tests/m3_saxpy/saxpy.cc` | Carries an Advanced Micro Devices, Inc. copyright notice. The exact immutable upstream source revision is not yet recorded. | `Apache-2.0 WITH LLVM-exception`; retain the file-level copyright and SPDX identifier. |
+| `tests/m17_radix2_fft/twiddles_r4_stockham.py` | Derives its packed-twiddle layout from [`diacccc/FFT_R4_AIE`](https://github.com/diacccc/FFT_R4_AIE), as stated in the file header. The exact immutable upstream source revision is not yet recorded. | `Apache-2.0 WITH LLVM-exception`; retain the file-level license and attribution. |
+| `tests/m17_radix2_fft/fft64_r4_wrapper.cc` | Original thin wrapper that textually includes the separately listed `kernels/fft_stockham_f32.cc` derivative. | `Apache-2.0 WITH LLVM-exception`; redistribution must also retain the included kernel's AMD attribution and notice. |
+| `tests/m32_mlkem/kpke_kernel.cc` | Declares a line-for-line pq-crystals Kyber reference transliteration in its file header. | MIT; retain the file-level SPDX identifier. The previously applicable project MIT text is preserved at [`LICENSES/MIT.txt`](LICENSES/MIT.txt). Upstream revision and notice verification remains required before a formal redistribution claim. |
 
 ## Test-vector provenance
 
@@ -38,7 +43,7 @@ When adding imported code or test data:
 2. add its path, immutable origin URL/revision, and license expression here;
 3. add the license text under `LICENSES/` when the license requires or
    benefits from local redistribution; and
-4. do not replace a file-specific SPDX expression with the project-wide MIT
+4. do not replace a file-specific SPDX expression with the project-wide Apache-2.0
    identifier.
 
 SPDX guidance on file-level identifiers:
