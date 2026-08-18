@@ -61,7 +61,22 @@ and binds to system CPython. The runner re-execs
 `third_party\mlir-aie\ironenv\Scripts\python.exe` (where Xilinx IRON installed
 numpy / `mlir_aie` / `pyxrt`) and sets `PEANO_INSTALL_DIR` from that same
 checkout. Do not activate `ironenv` or manually run `pip install` for the
-normal setup flow.
+normal one-command setup flow.
+
+To run an individual example or test after installation, activate the
+checkout-local environment from the repository root:
+
+```powershell
+.\scripts\activate_ironenv.ps1
+```
+
+The activation helper is drive-independent. It selects this clone's
+`third_party\mlir-aie\ironenv`, sets `PEANO_INSTALL_DIR` to this clone's Peano
+installation, and relies on the installer-validated checkout-local XRT Python
+binding. A new PowerShell window must activate the environment again before
+using generic `python` commands. The whole-suite command does not require
+manual activation because its runner performs the same interpreter and Peano
+selection automatically.
 
 For non-install maintenance, the launcher forwards `--check-only`,
 `--download-only`, and `--self-test` without invoking the canonical regression

@@ -7,6 +7,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "validate_clean_clone.ps1"
+ACTIVATE_SCRIPT = REPO / "scripts" / "activate_ironenv.ps1"
 RUNNER = REPO / "run_all_silicon_tests.py"
 ARCHIVED_MARKDOWN_ROOTS = (REPO / "docs" / "history", REPO / "third_party")
 EXPECTED_RUNNER_SHA256 = (
@@ -36,6 +37,19 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
             hashlib.sha256(RUNNER.read_bytes()).hexdigest(),
             EXPECTED_RUNNER_SHA256,
         )
+
+    def test_ironenv_activation_is_checkout_local_and_documented(self) -> None:
+        source = ACTIVATE_SCRIPT.read_text(encoding="utf-8-sig")
+        self.assertIn("$PSScriptRoot", source)
+        self.assertIn("PEANO_INSTALL_DIR", source)
+        self.assertIn(r"third_party\mlir-aie\ironenv\Scripts\Activate.ps1", source)
+        self.assertNotIn(r"C:\phoenix-sdr-dsp", source)
+        self.assertNotIn(r"C:\Xilinx\XRT", source)
+
+        for path in (REPO / "README.md", REPO / "docs" / "SETUP_WINDOWS.md"):
+            with self.subTest(path=path.relative_to(REPO)):
+                text = path.read_text(encoding="utf-8-sig")
+                self.assertIn(r".\scripts\activate_ironenv.ps1", text)
 
     def test_publication_documents_link_to_release_controls(self) -> None:
         readiness = (REPO / "docs" / "PUBLICATION_READINESS.md").read_text(

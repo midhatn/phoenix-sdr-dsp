@@ -35,6 +35,36 @@ pinned PQC reference packages and invokes the canonical
 `run_all_silicon_tests.py`. Do not manually clone MLIR-AIE, create or activate
 `ironenv`, or run `pip install` for the supported clean-clone flow.
 
+## Activate the environment after installation
+
+The installer and whole-suite runner do not require manual activation.
+Activation is required when a user wants to run individual M32, M33, or other
+Python test files with the generic `python` command. From the repository root,
+run:
+
+```powershell
+.\scripts\activate_ironenv.ps1
+```
+
+The prompt should begin with `(ironenv)`. Verify that the active interpreter
+belongs to the current clone:
+
+```powershell
+python -c "import sys; print(sys.executable)"
+python -c "import mlir_aie, pyxrt; print('IRON and XRT imports: OK')"
+```
+
+For a clone at `D:\phoenix-sdr-dsp`, the first command must report:
+
+```text
+D:\phoenix-sdr-dsp\third_party\mlir-aie\ironenv\Scripts\python.exe
+```
+
+Open PowerShell sessions do not inherit activation from earlier windows. Run
+the activation helper once in each new PowerShell window before using generic
+`python` commands. If the helper reports that `ironenv` or Peano is missing,
+return to the repository root and run `py .\install`.
+
 The installer pins MLIR-AIE to
 [`3ca0193cea9e2c39ec670a65f93e1dd43c969f22`](https://github.com/Xilinx/mlir-aie/commit/3ca0193cea9e2c39ec670a65f93e1dd43c969f22)
 and uses the published [v1.4.1 wheel](https://github.com/Xilinx/mlir-aie/releases/tag/v1.4.1),
@@ -99,6 +129,33 @@ groups without skips, explicit M33 silicon backend declarations, and anchored
 `TOTAL x/x PASS` lines. The recorded 2026-08-17 run completed 34/34 in 126.29
 seconds. See [`M33_SILICON_VALIDATION_20260817.md`](M33_SILICON_VALIDATION_20260817.md).
 
+## Run M32 and M33 individually
+
+These commands compile and dispatch physical workloads to the NPU. Complete
+the installation, activate `ironenv`, and run them from the repository root:
+
+```powershell
+.\scripts\activate_ironenv.ps1
+
+# M32: ML-KEM
+python .\tests\m32_mlkem\test_ntt_m32b.py
+python .\tests\m32_mlkem\test_keccak_shake_m32c.py
+python .\tests\m32_mlkem\test_kpke_m32d.py
+python .\tests\m32_mlkem\test_mlkem_m32e.py
+
+# M33: ML-DSA
+python .\tests\m33_mldsa\test_dilithium_ntt_m33a.py
+python .\tests\m33_mldsa\test_dilithium_sampler_m33b.py
+python .\tests\m33_mldsa\test_mldsa_keygen_m33d.py
+python .\tests\m33_mldsa\test_mldsa_sign_m33e.py
+python .\tests\m33_mldsa\test_mldsa_verify_m33e.py
+```
+
+Do not set `M32E_FORCE_HOST`; the canonical silicon policy rejects a
+host-forced M32e run. For the full validated sequence, prefer
+`py .\run_all_silicon_tests.py`, which selects the checkout-local interpreter
+without requiring activation.
+
 ## Optional: I/Q Throughput
 
 Not part of the 34-invocation suite. After the installer completes:
@@ -113,8 +170,9 @@ Expected on Phoenix NPU1: first-buffer max abs error 0.007812, then about 7.5 Ms
 
 | Symptom | Check |
 |---|---|
-| `No module named aie` | Activate `third_party\\mlir-aie\\ironenv` and verify `python --version`. |
-| `No module named pyxrt` | Confirm XRT is installed and its Python bindings match the active Python version. |
+| `activate_ironenv.ps1` says the environment is missing | Run `py .\install` from the repository root, then retry activation. |
+| `No module named aie` | Run `.\scripts\activate_ironenv.ps1` and verify that `sys.executable` points inside this clone. |
+| `No module named pyxrt` | Re-run `py .\install`; the supported flow installs the validated binding into the checkout-local environment. |
 | No `NPU Phoenix` in `xrt-smi examine` | Install or update the AMD NPU driver; confirm the hardware is Phoenix/XDNA1. |
 | Peano compiler is not found | Re-run `python utils\\iron_setup.py` inside the MLIR-AIE checkout. |
 | Regression imports fail | Confirm the MLIR-AIE checkout is at the pinned commit and submodules are initialized. |
