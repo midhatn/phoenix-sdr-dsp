@@ -49,9 +49,12 @@ The corrected matrix completed **34/34 PASS** in **126.29 seconds** on 2026-08-1
 On a Phoenix/Hawk Point XDNA1 system with the pinned Windows toolchain:
 
 ```powershell
-py .\install.py
-py .\run_all_silicon_tests.py
+py .\install
 ```
+
+The extensionless launcher installs the pinned stack and reference packages,
+then automatically invokes the canonical `run_all_silicon_tests.py`. No
+environment activation or manual `pip install` step is part of this flow.
 
 For the ML-KEM-512 test directly:
 

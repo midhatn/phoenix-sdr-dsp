@@ -8,6 +8,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "validate_clean_clone.ps1"
 RUNNER = REPO / "run_all_silicon_tests.py"
+ARCHIVED_MARKDOWN_ROOTS = (REPO / "docs" / "history", REPO / "third_party")
 EXPECTED_RUNNER_SHA256 = (
     "742591321ac5dc3069a51ded4e198905367f8dc6261df8c3ebae20b5e333fbad"
 )
@@ -49,6 +50,36 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         self.assertIn(EXPECTED_RUNNER_SHA256, checklist)
         self.assertIn("-InstallHostDependencies", checklist)
         self.assertIn("-RunSilicon", checklist)
+
+    def test_maintained_markdown_uses_supported_math_notation(self) -> None:
+        offending = []
+        for path in REPO.rglob("*.md"):
+            if any(root in path.parents for root in ARCHIVED_MARKDOWN_ROOTS):
+                continue
+            if "\\operatorname" in path.read_text(encoding="utf-8"):
+                offending.append(path.relative_to(REPO).as_posix())
+        self.assertEqual(offending, [])
+
+    def test_current_setup_materials_prefer_the_extensionless_launcher(self) -> None:
+        current_guidance = [
+            REPO / "README.md",
+            REPO / "CONTRIBUTING.md",
+            REPO / "docs" / "README.md",
+            REPO / "docs" / "SETUP_WINDOWS.md",
+            REPO / "docs" / "PQC_COMPLETE_V1.md",
+            REPO / "requirements" / "toolchain-versions.md",
+        ]
+        for path in current_guidance:
+            with self.subTest(path=path.relative_to(REPO)):
+                text = path.read_text(encoding="utf-8")
+                self.assertIn(r"py .\install", text)
+                self.assertNotIn(r"py .\install.py", text)
+
+        workflow = (REPO / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("python install --self-test", workflow)
+        self.assertNotIn("python install.py --self-test", workflow)
 
 
 if __name__ == "__main__":

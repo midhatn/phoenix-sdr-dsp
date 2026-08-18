@@ -35,10 +35,12 @@ See [`docs/SETUP_WINDOWS.md`](docs/SETUP_WINDOWS.md) for the full install
 walkthrough. The supported bootstrap is the hash-checked installer:
 
 ```powershell
-py .\install.py
+py .\install
 ```
 
-`scripts/bootstrap_env.ps1` is a compatibility wrapper around this same
+The extensionless launcher delegates to the hash-checked installer and invokes
+the canonical regression after a successful full install.
+`scripts/bootstrap_env.ps1` is a compatibility wrapper around the underlying
 installer; it no longer performs rolling package installs.
 
 ---
@@ -48,12 +50,8 @@ installer; it no longer performs rolling package installs.
 ### Use the checkout-local environment
 
 The canonical runner re-executes the checkout-local `ironenv` on Windows, so
-activation is not required to run it. Activate it only when you need its Python
-interpreter for a host-side tool:
-
-```powershell
-& ".\third_party\mlir-aie\ironenv\Scripts\Activate.ps1"
-```
+neither activation nor a manual package installation is required for the
+supported setup or regression flow.
 
 ### Verify silicon before touching anything
 

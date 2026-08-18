@@ -52,8 +52,9 @@ confirmed, we will work on a fix and coordinate a disclosure timeline with you.
   crash the NPU, corrupt DMA buffers, or hang XRT.
 - Numerical correctness regressions that break bit-exact verification against
   reference implementations.
-- Reproducibility issues in the pinned toolchain record (`toolchain.yaml`,
-  `install.py`, or the compatibility bootstrap wrapper).
+- Reproducibility issues in the pinned toolchain record (`toolchain.yaml`, the
+  `install` launcher and its internal implementation, or the compatibility
+  bootstrap wrapper).
 
 **Out of scope (report upstream):**
 

@@ -27,7 +27,7 @@ Read [M0–M33 Milestones and Mathematics](MILESTONES_AND_MATHEMATICS.md) for th
 - [AUDIT_REMEDIATION_20260818.md](AUDIT_REMEDIATION_20260818.md) — integrated
   audit findings, host-safe fixes, deletion ledger, validation, and deferred
   release/hardware work.
-- Root [Installation](../README.md#installation) — new-user path: clone, then `py .\install.py` (Xilinx XRT, Xilinx MLIR-AIE / IRON, LLVM Peano).
+- Root [Installation](../README.md#installation) — new-user path: clone, then `py .\install`; it installs the pinned stack and automatically runs the canonical regression.
 - [SETUP_WINDOWS.md](SETUP_WINDOWS.md) — longer native Windows walkthrough (XRT, mlir-aie, Peano, ironenv).
 - [M2_TOOLCHAIN_PIN.md](M2_TOOLCHAIN_PIN.md) — reason for pinning mlir-aie at commit `3ca0193` (v1.4.1 + 13 commits, includes upstream PR #3545 `run_chain` fix required by parallel-DMA milestones).
 
@@ -45,3 +45,7 @@ The documentation distinguishes direct physical-NPU validation, host/NPU composi
 - [`../scripts/validate_clean_clone.ps1`](../scripts/validate_clean_clone.ps1)
   — normal-user PowerShell 7 clean-clone audit. Its default path is host-safe;
   `-RunSilicon` is a separate, explicit NPU-dispatch action.
+- `tests/test_release_materials_contract.py` — host-safe release-material
+  contracts, including a maintained-Markdown math-rendering guard. Archived
+  evidence under `history/` is intentionally excluded from that current-source
+  check.

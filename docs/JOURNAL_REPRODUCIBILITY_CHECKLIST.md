@@ -21,6 +21,11 @@ checked box means evidence was retained, not merely observed in a terminal.
 
 - [ ] Verify `run_all_silicon_tests.py` SHA-256 equals
   `742591321ac5dc3069a51ded4e198905367f8dc6261df8c3ebae20b5e333fbad`.
+- [ ] On the approved Phoenix target, open PowerShell in the clone and run
+  `py .\install`. This clean-clone command installs the pinned dependencies
+  and automatically invokes the canonical runner on success; retain its full
+  transcript. Do not add an environment-activation or manual `pip install`
+  step to this supported flow.
 - [ ] Run
   `pwsh -File .\scripts\validate_clean_clone.ps1 -InstallHostDependencies`
   from a new clone as a normal user and retain its one timestamped report.

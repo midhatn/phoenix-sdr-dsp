@@ -15,61 +15,43 @@ The validated versions are recorded in [toolchain-versions.md](../requirements/t
 
 ## Prerequisites
 
-Install these before cloning the external toolchain:
+Before cloning, install Git for Windows, CPython 3.13, CMake, and Visual Studio
+2022 Build Tools with the Desktop Development with C++ and C++ Clang/LLVM
+components. The target also needs a compatible AMD Phoenix/XDNA1 NPU driver.
+The installer checks these prerequisites and manages the pinned XRT SDK,
+MLIR-AIE v1.4.1 wheel, source revision, IRON environment, and Peano setup.
 
-1. Git for Windows.
-2. Python 3.13 ([IRON requires CPython 3.13 for Windows `pyxrt`](https://xilinx.github.io/mlir-aie/1.4.1/buildHostWinNative/)).
-3. CMake.
-4. Visual Studio 2022 Build Tools with the Desktop Development with C++ workload (the [IRON guide](https://xilinx.github.io/mlir-aie/1.4.1/buildHostWinNative/) also lists the C++ Clang Compiler for Windows component).
-5. AMD NPU driver compatible with Phoenix/XDNA1 (guide minimum `32.0.20101.3760`).
-6. XRT for Windows, installed under `C:\\Xilinx\\XRT` from [XRT 2.21.75](https://github.com/Xilinx/XRT/releases/tag/2.21.75) (`xrt_windows_sdk.zip`).
+## Clone and install
 
-Verify the NPU is visible:
+Clone the repository, open PowerShell in the resulting clone, and run exactly:
 
 ```powershell
-& "C:\\Windows\\System32\\AMD\\xrt-smi.exe" examine
+py .\install
 ```
 
-The output must list `NPU Phoenix`.
+The extensionless stdlib-only launcher uses an internal installer
+implementation. On a successful full install, it automatically installs the
+pinned PQC reference packages and invokes the canonical
+`run_all_silicon_tests.py`. Do not manually clone MLIR-AIE, create or activate
+`ironenv`, or run `pip install` for the supported clean-clone flow.
 
-## Clone the Project
+The installer pins MLIR-AIE to
+[`3ca0193cea9e2c39ec670a65f93e1dd43c969f22`](https://github.com/Xilinx/mlir-aie/commit/3ca0193cea9e2c39ec670a65f93e1dd43c969f22)
+and uses the published [v1.4.1 wheel](https://github.com/Xilinx/mlir-aie/releases/tag/v1.4.1),
+not the rolling wheels channel. Pin rationale is in
+[`M2_TOOLCHAIN_PIN.md`](M2_TOOLCHAIN_PIN.md).
 
-```powershell
-Set-Location C:\\
-git clone https://github.com/midhatn/phoenix-sdr-dsp.git
-Set-Location C:\\phoenix-sdr-dsp
-```
+## Maintenance modes
 
-## Clone MLIR-AIE
-
-MLIR-AIE is an external dependency and is intentionally not included in this repository. The regression suite requires mlir-aie **[v1.4.1](https://github.com/Xilinx/mlir-aie/releases/tag/v1.4.1)** or later (v1.4.1 released 2026-08-11 introduces the current [`iron.Runtime(seq_fn, fn_args=...)`](https://github.com/Xilinx/mlir-aie/blob/3ca0193/python/iron/runtime/runtime.py) API used by every iron-based test in `tests/`). The v0.4.0 release of Phoenix SDR-DSP is verified against upstream commit [`3ca0193cea9e2c39ec670a65f93e1dd43c969f22`](https://github.com/Xilinx/mlir-aie/commit/3ca0193cea9e2c39ec670a65f93e1dd43c969f22) (2026-08-14), which is v1.4.1 plus 13 commits including [PR #3545](https://github.com/Xilinx/mlir-aie/pull/3545) (`run_chain` executable-lifetime fix).
-
-```powershell
-New-Item -ItemType Directory -Force -Path third_party | Out-Null
-Set-Location C:\\phoenix-sdr-dsp\\third_party
-
-git clone --recurse-submodules https://github.com/Xilinx/mlir-aie.git
-Set-Location C:\\phoenix-sdr-dsp\\third_party\\mlir-aie
-
-git checkout 3ca0193cea9e2c39ec670a65f93e1dd43c969f22
-git submodule update --init --recursive
-```
-
-Do not check out an mlir-aie release earlier than v1.4.1: the previous context-manager `Runtime()` API used before v1.4.1 is incompatible with the current tests. Details in `docs/M2_TOOLCHAIN_PIN.md`.
-
-## Create the IRON Environment
-
-From the MLIR-AIE checkout:
+The launcher forwards maintenance arguments. These modes never dispatch
+kernels or invoke the canonical regression. `--check-only` and
+`--download-only` can call `xrt-smi examine` to report prerequisite status;
+`--self-test` uses only local temporary files:
 
 ```powershell
-Set-Location C:\\phoenix-sdr-dsp\\third_party\\mlir-aie
-python utils\\iron_setup.py
-```
-
-Activate the resulting environment:
-
-```powershell
-& C:\\phoenix-sdr-dsp\\third_party\\mlir-aie\\ironenv\\Scripts\\Activate.ps1
+py .\install --check-only
+py .\install --download-only
+py .\install --self-test
 ```
 
 ## Post-Quantum Cryptography reference dependencies (M32 / M33)
@@ -79,15 +61,10 @@ ACVP-Server known-answer vectors and two published reference implementations
 from the [pq-crystals](https://pq-crystals.org/) family. M32b/c/d and M33a/b
 dispatch directly to the NPU. M32e combines 60 host KATs with a nine-vector
 ML-KEM-512 silicon smoke gate, while M33d/e are host/NPU composers using the
-native M33a/M33b primitive runners. Since v1.0.0, `install.py` auto-installs
-the version-pinned oracle and test packages into the `ironenv` it creates. The
-transitive dependency closure remains unhashed, so this is not yet a fully
-locked Python environment. The equivalent manual step, useful if you bootstrapped `ironenv`
-another way or want to re-pin versions, is:
-
-```powershell
-& C:\\phoenix-sdr-dsp\\third_party\\mlir-aie\\ironenv\\Scripts\\python.exe -m pip install kyber-py==1.0.1 dilithium-py==1.4.0 pytest
-```
+native M33a/M33b primitive runners. The `py .\install` clean-clone flow
+auto-installs the version-pinned oracle and test packages into the `ironenv` it
+creates. The transitive dependency closure remains unhashed, so this is not
+yet a fully locked Python environment.
 
 Versions are pinned to the values validated on 2026-08-16 against the [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) response vectors for ML-KEM ([FIPS 203, 2024-08-13](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf)) and ML-DSA ([FIPS 204, 2024-08-13](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf)):
 
@@ -101,28 +78,30 @@ The NIST ACVP-Server key-generation / encapsulation / decapsulation vectors for 
 
 ## Validate the Installation
 
-Run these commands after activation:
-
-```powershell
-python -c "import aie; print('MLIR-AIE:', aie.__file__)"
-python -c "import pyxrt; print('XRT Python:', pyxrt.__file__)"
-& "C:\\Windows\\System32\\AMD\\xrt-smi.exe" examine
-```
-
-The first two commands must complete without errors. The XRT command must list `NPU Phoenix`.
+No separate validation command is required: a successful `py .\install`
+automatically invokes the canonical regression runner. The runner uses the
+checkout-local `ironenv` itself, so activation is not part of the supported
+flow.
 
 ## Run the Regression Suite
 
 ```powershell
-Set-Location C:\\phoenix-sdr-dsp
-python run_all_silicon_tests.py
+py .\run_all_silicon_tests.py
 ```
 
-The automated suite runs 34 invocations covering M3, M5 through M15, M15b, M17, M17p, M19 through M27, and the Post-Quantum Cryptography track M32b, M32c, M32d, M32e plus M33a, M33b, M33d, M33e-sign, and M33e-verify. Its current composition is 29 direct-hardware entries, four host/NPU composer entries, and one intentional CPU reference entry (M12). The strict runner requires all three M32e silicon groups without skips, explicit M33 silicon backend declarations, and anchored `TOTAL x/x PASS` lines. The recorded 2026-08-17 run completed 34/34 in 126.29 seconds. See [`M33_SILICON_VALIDATION_20260817.md`](M33_SILICON_VALIDATION_20260817.md).
+Use this command only to rerun the suite after installation. The automated
+suite runs 34 invocations covering M3, M5 through M15, M15b, M17, M17p, M19
+through M27, and the Post-Quantum Cryptography track M32b, M32c, M32d, M32e
+plus M33a, M33b, M33d, M33e-sign, and M33e-verify. Its current composition is
+29 direct-hardware entries, four host/NPU composer entries, and one intentional
+CPU reference entry (M12). The strict runner requires all three M32e silicon
+groups without skips, explicit M33 silicon backend declarations, and anchored
+`TOTAL x/x PASS` lines. The recorded 2026-08-17 run completed 34/34 in 126.29
+seconds. See [`M33_SILICON_VALIDATION_20260817.md`](M33_SILICON_VALIDATION_20260817.md).
 
 ## Optional: I/Q Throughput
 
-Not part of the 34-invocation suite. After ironenv is active:
+Not part of the 34-invocation suite. After the installer completes:
 
 ```powershell
 python tests\npu_visible\test_iq_throughput.py

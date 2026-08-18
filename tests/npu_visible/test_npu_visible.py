@@ -29,7 +29,7 @@ def ensure_ironenv_interpreter() -> None:
         return
     if not IRONENV_PYTHON.is_file():
         print("ironenv not found. Run this first:")
-        print("  python install.py")
+        print("  py .\\install")
         sys.exit(2)
     wanted = IRONENV_PYTHON.resolve()
     current = Path(sys.executable).resolve()

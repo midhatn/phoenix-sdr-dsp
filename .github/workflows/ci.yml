@@ -161,11 +161,12 @@ jobs:
           python -m unittest -v \
             tests/test_m33_native_runner_contract.py \
             tests/test_regression_validation.py \
-            tests/test_release_materials_contract.py
+            tests/test_release_materials_contract.py \
+            tests/test_install_launcher_contract.py
 
       - name: Run installer self-test
         run: |
-          python install.py --self-test
+          python install --self-test
 
       - name: Compile and run public modular-header UBSan properties
         run: |

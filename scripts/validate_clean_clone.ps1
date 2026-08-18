@@ -112,7 +112,10 @@ try {
 
     Invoke-Checked "Compile maintained Python" $pythonCommand @(
         "-m", "compileall", "-q", "phoenix_sdr_dsp", "tests", "tools",
-        "install.py", "run_all_silicon_tests.py"
+        "run_all_silicon_tests.py"
+    )
+    Invoke-Checked "Compile clean-clone installer" $pythonCommand @(
+        "-m", "py_compile", "install", "install.py"
     )
     Invoke-Checked "Verify public-header inventory" $pythonCommand @(
         "include/sdr_dsp/verify_m4_headers.py"
@@ -121,9 +124,10 @@ try {
         "-m", "unittest", "-v",
         "tests/test_m33_native_runner_contract.py",
         "tests/test_regression_validation.py",
-        "tests/test_release_materials_contract.py"
+        "tests/test_release_materials_contract.py",
+        "tests/test_install_launcher_contract.py"
     )
-    Invoke-Checked "Run installer self-test" $pythonCommand @("install.py", "--self-test")
+    Invoke-Checked "Run installer self-test" $pythonCommand @("install", "--self-test")
 
     Write-Report "`nHost-safe audit: PASS"
     if ($RunSilicon) {

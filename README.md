@@ -23,7 +23,7 @@ Third-party source and test-vector provenance is recorded in
 
 **7.46 Msps of real I/Q on a 10 TOPS AMD laptop NPU.** 29.8 MB/s in · 59.7 MB/s in+out · ~92% NPU. No discrete GPU. No FPGA.
 
-The 34-entry regression matrix completed **34/34 PASS** on 2026-08-17 in 126.29 seconds. Its accurate backend accounting is **29 direct-hardware entries**, four host/NPU composer entries (M32e, M33d, M33e Sign, and M33e Verify), and one intentional CPU reference entry (M12). M33a and M33b are native, fail-closed silicon gates; the higher-level composers dispatch those primitives from Python and are not fully device-resident. See the [`M33 validation record`](docs/M33_SILICON_VALIDATION_20260817.md), [`v1.0.0 validation errata`](docs/V1_0_0_VALIDATION_ERRATA.md), and [`PQC status summary`](docs/PQC_COMPLETE_V1.md). New-user path: `git clone` → `py .\install.py` → `py .\run_all_silicon_tests.py`.
+The 34-entry regression matrix completed **34/34 PASS** on 2026-08-17 in 126.29 seconds. Its accurate backend accounting is **29 direct-hardware entries**, four host/NPU composer entries (M32e, M33d, M33e Sign, and M33e Verify), and one intentional CPU reference entry (M12). M33a and M33b are native, fail-closed silicon gates; the higher-level composers dispatch those primitives from Python and are not fully device-resident. See the [`M33 validation record`](docs/M33_SILICON_VALIDATION_20260817.md), [`v1.0.0 validation errata`](docs/V1_0_0_VALIDATION_ERRATA.md), and [`PQC status summary`](docs/PQC_COMPLETE_V1.md). New-user path: clone the repository, then run `py .\install`; a successful install automatically invokes the canonical regression runner.
 
 [Install](#installation) • [Architecture](#1-system--hardware-architecture) • [Directory Structure](#2-repository-structure) • [Validation Matrix](#3-validation-matrix) • [I/Q Throughput](#iq-throughput) • [Engineering Issues & Fixes](#4-engineering-challenges--technical-solutions) • [Quickstart](#5-quickstart--silicon-verification) • [References](#6-references--upstream-projects) • [Credits](#7-credits--acknowledgments)  • [Documentation](docs/README.md) • [Publication readiness](docs/PUBLICATION_READINESS.md)
 
@@ -33,7 +33,7 @@ The 34-entry regression matrix completed **34/34 PASS** on 2026-08-17 in 126.29 
 
 ## Installation
 
-A new Windows 11 machine with a Phoenix / Hawk Point NPU only needs a clone of this repository. `install.py` is stdlib-only and wraps the official Xilinx / AMD native-Windows stack:
+A new Windows 11 machine with a Phoenix / Hawk Point NPU only needs a clone of this repository. The extensionless, stdlib-only `install` launcher wraps the official Xilinx / AMD native-Windows stack:
 
 | Component | Pin | Upstream |
 | :--- | :--- | :--- |
@@ -42,24 +42,36 @@ A new Windows 11 machine with a Phoenix / Hawk Point NPU only needs a clone of t
 | [LLVM Peano](https://github.com/Xilinx/llvm-aie) (`llvm-aie`) | `21.0.0.2026080301+c9c5ecb7` | AIE2 `clang++` |
 | AMD NPU driver / `xrt-smi` | ≥ `32.0.20102.3930` | already on the laptop |
 
-Do not install `mlir_aie` from the rolling [`latest-wheels-4`](https://github.com/Xilinx/mlir-aie/releases/expanded_assets/latest-wheels-4) channel. An untagged checkout of pin `3ca0193` would otherwise resolve to an older series (observed: 1.3.4). `install.py` downloads the published v1.4.1 `cp313` wheel into a local wheelhouse and passes `--wheelhouse` to official [`iron_setup.py`](https://github.com/Xilinx/mlir-aie/blob/3ca0193/utils/iron_setup.py).
+Do not install `mlir_aie` from the rolling [`latest-wheels-4`](https://github.com/Xilinx/mlir-aie/releases/expanded_assets/latest-wheels-4) channel. An untagged checkout of pin `3ca0193` would otherwise resolve to an older series (observed: 1.3.4). The installer downloads the published v1.4.1 `cp313` wheel into a local wheelhouse and passes `--wheelhouse` to official [`iron_setup.py`](https://github.com/Xilinx/mlir-aie/blob/3ca0193/utils/iron_setup.py).
 
 ### New-user steps
 
+Clone the repository, open PowerShell in that clone, and run the one setup
+command:
+
 ```powershell
-conda deactivate   # if a conda prompt is active
-git clone https://github.com/midhatn/phoenix-sdr-dsp.git
-cd phoenix-sdr-dsp
-py .\install.py
-
-# Post-Quantum Cryptography reference packages (M32 + M33)
-.\third_party\mlir-aie\ironenv\Scripts\activate.bat
-pip install kyber-py==1.0.1 dilithium-py==1.4.0 pytest
-
-py .\run_all_silicon_tests.py
+py .\install
 ```
 
-`py` is the [Windows Python launcher](https://docs.python.org/3/using/windows.html#python-launcher-for-windows) and binds to system CPython. The test runner re-execs `third_party\mlir-aie\ironenv\Scripts\python.exe` (where Xilinx IRON installed numpy / `mlir_aie` / `pyxrt`) and sets `PEANO_INSTALL_DIR` from that same checkout. No activate step is required for the runner itself; the `activate.bat` above is only needed to `pip install` the PQC reference packages into the same environment. Full walkthrough with citations: [`docs/SETUP_WINDOWS.md §Post-Quantum Cryptography reference dependencies`](docs/SETUP_WINDOWS.md#post-quantum-cryptography-reference-dependencies-m32--m33).
+The launcher uses its internal installer implementation, installs the pinned
+XRT / MLIR-AIE / IRON stack and PQC reference packages, then invokes the canonical
+`run_all_silicon_tests.py` after a successful full installation. `py` is the
+[Windows Python launcher](https://docs.python.org/3/using/windows.html#python-launcher-for-windows)
+and binds to system CPython. The runner re-execs
+`third_party\mlir-aie\ironenv\Scripts\python.exe` (where Xilinx IRON installed
+numpy / `mlir_aie` / `pyxrt`) and sets `PEANO_INSTALL_DIR` from that same
+checkout. Do not activate `ironenv` or manually run `pip install` for the
+normal setup flow.
+
+For non-install maintenance, the launcher forwards `--check-only`,
+`--download-only`, and `--self-test` without invoking the canonical regression
+or dispatching kernels. `--check-only` and `--download-only` can call
+`xrt-smi examine` as a prerequisite probe; `--self-test` uses only local
+temporary files:
+
+```powershell
+py .\install --check-only
+```
 
 ### Prerequisites
 
@@ -127,7 +139,8 @@ phoenix-sdr-dsp/
 ├── docs/                            # Milestones, mathematics, ROADMAP, Windows setup, toolchain pin
 ├── requirements/                    # Pinned toolchain versions
 ├── toolchain.yaml                   # Machine-readable pinned stack (silicon-verified components)
-├── install.py                       # One-command Windows installer (clone, then run this)
+├── install                          # Windows clean-clone launcher: py .\install
+├── install.py                       # Internal implementation used by install
 ├── run_all_silicon_tests.py         # Automated Master Regression Suite
 ├── CITATION.cff                     # Citation metadata (validated with cffconvert)
 ├── LICENSE                          # MIT License
@@ -273,7 +286,8 @@ During development on native Windows 11 with the AMD IRON/AIE2 toolchain, severa
 
 ## 5. Quickstart & Silicon Verification
 
-Clone and install are in [Installation](#installation). After `install.py`, from the clone:
+The [Installation](#installation) command already runs the canonical regression
+after a successful install. To rerun it later from the clone:
 
 ```powershell
 py .\run_all_silicon_tests.py

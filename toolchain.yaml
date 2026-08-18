@@ -61,7 +61,7 @@ toolchain:
     verified_commit_date: "2026-08-14"
     verified_commit_pr: "https://github.com/Xilinx/mlir-aie/pull/3545"
     source: "git checkout in third_party/mlir-aie"
-    # Published cp313 Windows wheel used by install.py --wheelhouse.
+    # Published cp313 Windows wheel used by the install launcher wheelhouse.
     # Do not use latest-wheels-4 for an untagged 3ca0193 checkout.
     wheel_name: "mlir_aie-1.4.1-cp313-cp313-win_amd64.whl"
     wheel_url: "https://github.com/Xilinx/mlir-aie/releases/download/v1.4.1/mlir_aie-1.4.1-cp313-cp313-win_amd64.whl"
@@ -120,12 +120,12 @@ verification:
     result: "16/16 PASS"
     total_elapsed_seconds: 17.46
     commit: "9effa56"
-    # Second-volume wipe-and-clone of main (install.py + ironenv runner).
+    # Second-volume wipe-and-clone of main (install launcher + ironenv runner).
     clean_clone:
       date: "2026-08-15"
       result: "16/16 PASS"
       total_elapsed_seconds: 95.91
-      note: "cold xclbin compile after py .\\install.py; mlir_aie 1.4.1 wheelhouse"
+      note: "cold xclbin compile after py .\\install; mlir_aie 1.4.1 wheelhouse"
     milestones:
       - { id: M3,   name: "Single-Core SAXPY Vector Operation",                status: PASS, note: "Bit-exact (0.0 error)" }
       - { id: M5,   name: "8-Tap Vectorized Low-Pass FIR",                     status: PASS, note: "L_inf <= 0.007812" }
@@ -146,7 +146,7 @@ verification:
 
 # --- Bootstrap contract ---------------------------------------------------
 bootstrap:
-  script: "install.py"
+  script: "install"
   repair_script: "scripts/bootstrap_env.ps1"
   url: "https://github.com/Xilinx/XRT/releases/download/2.21.75/xrt_windows_sdk.zip"
   tag: "2.21.75"

@@ -7,7 +7,7 @@
 # A new user should only need:
 #   git clone https://github.com/midhatn/phoenix-sdr-dsp.git
 #   cd phoenix-sdr-dsp
-#   python install.py
+#   py .\install
 #
 # This file is stdlib-only so it runs on a stock CPython 3.13 before ironenv
 # or numpy exist. Do not name it setup.py — that name is reserved for
@@ -19,7 +19,8 @@
 #   https://github.com/Xilinx/XRT/releases/download/2.21.75/xrt_windows_sdk.zip
 #
 # scripts/bootstrap_env.ps1 remains the repair script for an already-populated
-# third_party/ tree. This file (install.py) is the first-clone installer.
+# third_party/ tree. This file is the implementation called by the extensionless
+# install launcher; normal users should run `py .\install`.
 
 from __future__ import annotations
 
@@ -627,7 +628,7 @@ def run_prerequisite_checks(pins: Pins, *, require_silicon: bool) -> CheckReport
                 ok=False,
                 required=True,
                 detail=f"this interpreter is {sys.platform}",
-                hint="Run install.py on the Phoenix laptop, not WSL/Linux/macOS.",
+                hint="Run py .\\install on the Phoenix laptop, not WSL/Linux/macOS.",
             )
         )
 
@@ -942,14 +943,14 @@ PQC_REFERENCE_PACKAGES: tuple[str, ...] = (
 
 
 def install_pqc_reference_packages(iron_python: Path) -> None:
-    """Install the declared PQC reference packages into ironenv.
+    r"""Install the declared PQC reference packages into ironenv.
 
     `kyber-py`, `dilithium-py`, and pytest are version-pinned. The full
     transitive dependency closure is still not hash-locked. These are required by the
     Post-Quantum Cryptography track (M32 FIPS 203
     ML-KEM and M33 FIPS 204 ML-DSA). Installing them here means a new user
-    running `python install.py` on a fresh clone gets a fully working
-    `python run_all_silicon_tests.py` without a second manual pip step.
+    running `py .\install` on a fresh clone gets a fully working canonical
+    regression without a second manual pip step.
     """
     section("Post-Quantum Cryptography reference packages")
     if not iron_python.is_file():
@@ -1044,16 +1045,20 @@ def self_test() -> int:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Phoenix SDR-DSP one-command Windows installer.",
+        prog="install" if globals().get("PHOENIX_INSTALL_LAUNCHER") else None,
     )
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="Run prerequisite checks and exit (no downloads).",
+        help="Run prerequisite checks and exit; may call xrt-smi but runs no kernels.",
     )
     parser.add_argument(
         "--download-only",
         action="store_true",
-        help="Prereqs + idempotent XRT download/extract + mlir-aie pin. Skip iron_setup.",
+        help=(
+            "Prereqs + idempotent downloads + mlir-aie pin; may call xrt-smi, "
+            "but skips iron_setup and the canonical regression."
+        ),
     )
     parser.add_argument(
         "--force",
@@ -1063,7 +1068,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--run-tests",
         action="store_true",
-        help="After a full install, run python run_all_silicon_tests.py.",
+        help="After a full install, run the canonical run_all_silicon_tests.py.",
     )
     parser.add_argument(
         "--self-test",
@@ -1171,8 +1176,12 @@ def main(argv: list[str] | None = None) -> int:
     print("\n======================================================================")
     print(" Install complete.")
     print("======================================================================")
-    print(" Next step:")
-    print("   python run_all_silicon_tests.py")
+    if args.run_tests:
+        print(" Canonical silicon regression will start now.")
+    else:
+        print(" Next step:")
+        print("   py .\\install")
+        print(" The clean-clone launcher runs the canonical regression automatically.")
     print(" The test runner uses ironenv automatically. No activate step.")
     print(" Recorded v1.0.0 result: 34 / 34 mixed-backend PASS (M3, M5-M15,")
     print(" M15b, M17, M17p, M19-M27, M32b/c/d/e, M33a/b/d/e-sign/e-verify).")

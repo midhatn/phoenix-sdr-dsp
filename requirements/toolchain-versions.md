@@ -38,7 +38,12 @@ This project was validated on a native Windows environment targeting the AMD Pho
 
 ## Post-Quantum Cryptography (PQC) reference packages
 
-Auto-installed inside the `ironenv` by `install.py` for the M32 [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf) ML-KEM and M33 [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf) ML-DSA composer gates. Versions are pinned to the values validated on 2026-08-16 against the [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server) response vectors:
+Auto-installed inside the `ironenv` by the `py .\install` clean-clone flow for
+the M32 [FIPS 203](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf)
+ML-KEM and M33 [FIPS 204](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.204.pdf)
+ML-DSA composer gates. Versions are pinned to the values validated on
+2026-08-16 against the [NIST ACVP-Server](https://github.com/usnistgov/ACVP-Server)
+response vectors:
 
 | Component | Verified value | Upstream |
 |---|---|---|
@@ -46,7 +51,7 @@ Auto-installed inside the `ironenv` by `install.py` for the M32 [FIPS 203](https
 | `dilithium-py` | `1.4.0` | [github.com/GiacomoPope/dilithium-py](https://github.com/GiacomoPope/dilithium-py) |
 | `pytest` | `9.1.1` | [docs.pytest.org](https://docs.pytest.org/) |
 
-All SHAKE128 / SHAKE256 / SHA3-256 / SHA3-512 primitives come from the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required. The equivalent manual install command is documented in [`docs/SETUP_WINDOWS.md`](../docs/SETUP_WINDOWS.md). NIST ACVP-Server KAT vectors for ML-KEM (keyGen / encapsulation / decapsulation) and ML-DSA (keyGen / signature-generation / signature-verification) are vendored inside the repository at `tests/m32_mlkem/vectors/` and `tests/m33_mldsa/vectors/`. Source: [`usnistgov/ACVP-Server`](https://github.com/usnistgov/ACVP-Server/tree/master/gen-val/json-files).
+All SHAKE128 / SHAKE256 / SHA3-256 / SHA3-512 primitives come from the CPython [`hashlib`](https://docs.python.org/3/library/hashlib.html) standard library, so no separate SHAKE / Keccak wheel is required. NIST ACVP-Server KAT vectors for ML-KEM (keyGen / encapsulation / decapsulation) and ML-DSA (keyGen / signature-generation / signature-verification) are vendored inside the repository at `tests/m32_mlkem/vectors/` and `tests/m33_mldsa/vectors/`. Source: [`usnistgov/ACVP-Server`](https://github.com/usnistgov/ACVP-Server/tree/master/gen-val/json-files).
 
 ## Required Validation
 
