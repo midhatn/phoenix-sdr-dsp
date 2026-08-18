@@ -147,12 +147,15 @@ For a clean-drive, host-safe audit that never accesses the NPU, run PowerShell
 7 as a normal user:
 
 ```powershell
-pwsh -File .\scripts\validate_clean_clone.ps1
+pwsh -File .\scripts\validate_clean_clone.ps1 `
+    -InstallHostDependencies
 ```
 
-It writes one timestamped report beneath ignored `release-evidence/`. The
-separate `-RunSilicon` switch runs the unchanged canonical runner only after
-the host checks pass and must be used only on an approved Phoenix test host.
+The explicit switch installs and verifies pinned `numpy==2.5.2`, then writes
+one timestamped report beneath ignored `release-evidence/`. Without it, a
+missing or mismatched NumPy version causes an actionable refusal. The separate
+`-RunSilicon` switch runs the unchanged canonical runner only after the host
+checks pass and must be used only on an approved Phoenix test host.
 Publication scope, evidence limits, and retention requirements are in
 [Publication readiness](docs/PUBLICATION_READINESS.md) and the
 [journal reproducibility checklist](docs/JOURNAL_REPRODUCIBILITY_CHECKLIST.md).

@@ -21,8 +21,12 @@ checked box means evidence was retained, not merely observed in a terminal.
 
 - [ ] Verify `run_all_silicon_tests.py` SHA-256 equals
   `742591321ac5dc3069a51ded4e198905367f8dc6261df8c3ebae20b5e333fbad`.
-- [ ] Run `pwsh -File .\scripts\validate_clean_clone.ps1` from a new clone as
-  a normal user and retain its one timestamped report.
+- [ ] Run
+  `pwsh -File .\scripts\validate_clean_clone.ps1 -InstallHostDependencies`
+  from a new clone as a normal user and retain its one timestamped report.
+  The switch explicitly installs and verifies pinned `numpy==2.5.2`. Without
+  it, a missing or mismatched NumPy installation must stop with an actionable
+  refusal before the contract suite.
 - [ ] Confirm the default report says NPU access is disabled and distinguish
   it from a physical result.
 - [ ] Record the exact revision for every historical transcript referenced by

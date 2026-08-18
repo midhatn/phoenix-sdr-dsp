@@ -51,8 +51,10 @@ extend the algorithmic claims beyond the tracked tests and records.
 1. Clone the intended revision to a new directory on the target drive; record
    the remote URL and `git rev-parse HEAD`.
 2. In normal-user PowerShell 7, run
-   `pwsh -File .\scripts\validate_clean_clone.ps1`. The default is host-safe
-   and writes exactly one timestamped text report below ignored
+   `pwsh -File .\scripts\validate_clean_clone.ps1
+   -InstallHostDependencies`. The explicit switch installs and verifies
+   pinned `numpy==2.5.2`; the validation path remains host-safe and writes
+   exactly one timestamped text report below ignored
    `release-evidence/clean-clone/`.
 3. Archive that report with the unmodified clone's commit, `git status
    --short --branch`, tool versions, and the SHA-256 of the canonical runner.
@@ -100,6 +102,17 @@ to be omitted from a release comparison.
    to complete residency, conformance, or certification.
 
 ## Release and tag policy
+
+### Clean-drive RC.1 result
+
+The first independent Windows clean-drive execution of `v1.0.1-rc.1` on
+2026-08-18 used PowerShell 7.6.5, Git 2.48.1.windows.1, and Python 3.13.15.
+Repository identity, Python compilation, the public-header inventory, and the
+canonical-runner SHA-256 gate passed. The host-contract stage then stopped
+before hardware access because system Python did not contain NumPy. This is a
+prerequisite failure, not a passed host or silicon validation. The timestamped
+failure report is part of the release-candidate evidence, and RC.2 adds an
+explicit pinned-dependency installation switch rather than rewriting RC.1.
 
 Use an annotated release-candidate tag only after the host-safe report and
 reviewed diff are retained. The tag message must identify the exact commit,

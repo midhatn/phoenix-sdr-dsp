@@ -18,8 +18,12 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8-sig")
         self.assertEqual(source.count("{"), source.count("}"))
         self.assertIn("[switch]$RunSilicon", source)
+        self.assertIn("[switch]$InstallHostDependencies", source)
         self.assertIn("if ($RunSilicon)", source)
         self.assertIn("accesses the NPU", source)
+        self.assertIn("numpy==$requiredNumpyVersion", source)
+        self.assertIn('"2.5.2"', source)
+        self.assertIn("Re-run with -InstallHostDependencies", source)
         self.assertIn("Compile maintained Python", source)
         self.assertIn("Run host-only contracts", source)
         self.assertIn(EXPECTED_RUNNER_SHA256, source)
@@ -43,6 +47,7 @@ class ReleaseMaterialsContractTests(unittest.TestCase):
         self.assertIn("29 direct-hardware", readiness)
         self.assertIn("four host/NPU", readiness)
         self.assertIn(EXPECTED_RUNNER_SHA256, checklist)
+        self.assertIn("-InstallHostDependencies", checklist)
         self.assertIn("-RunSilicon", checklist)
 
 
